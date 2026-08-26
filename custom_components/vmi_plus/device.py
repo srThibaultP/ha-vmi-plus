@@ -20,10 +20,24 @@ class VmiPlusDevice:
     def __init__(self, hass: HomeAssistant, address: str) -> None:
         self.hass = hass
         self.address = address
+        self.enabled = True
         self._client: BleakClientWithServiceCache | None = None
         self._lock = asyncio.Lock()
 
+    async def set_enabled(self, enabled: bool) -> None:
+        """Active/désactive la connexion BLE. Utile pour libérer la centrale (une seule
+        connexion GATT possible à la fois) au profit de l'app officielle par exemple."""
+        self.enabled = enabled
+        if not enabled:
+            await self.disconnect()
+
     async def _ensure_connected(self) -> BleakClientWithServiceCache:
+        if not self.enabled:
+            raise RuntimeError(
+                "Connexion Bluetooth désactivée pour cette centrale VMI+ "
+                "(voir l'entité switch dédiée)"
+            )
+
         if self._client is not None and self._client.is_connected:
             return self._client
 

@@ -1,3 +1,5 @@
+<p align="center"><img src="images/logo.png" width="96" alt="Logo VMI+"></p>
+
 # VMI+ → Home Assistant
 
 Intégration non-officielle pour piloter en Bluetooth Low Energy une centrale de ventilation
@@ -37,6 +39,8 @@ Entités créées :
 - `fan.ventilation` — vitesse 1/2/3
 - `switch.boost` — surventilation 30 min
 - `switch.bypass` — contournement de l'échangeur (préchauffage gratuit de l'air, utile en hiver)
+- `switch.connexion_bluetooth` — active/désactive la connexion BLE (utile pour libérer la
+  centrale au profit de l'app officielle, une seule connexion GATT possible à la fois)
 
 Ce code n'a pas été testé à l'intérieur d'une vraie instance Home Assistant (pas d'accès à
 une instance depuis cette session) — seule la couche protocole/BLE bas niveau (`protocol.py`,
