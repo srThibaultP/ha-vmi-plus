@@ -50,11 +50,18 @@ class VmiPlusDevice:
     def is_connected(self) -> bool:
         return self._client is not None and self._client.is_connected
 
-    async def async_verify_connection(self) -> None:
+    async def async_verify_connection(self, timeout: float = 15) -> None:
         """Tente une connexion BLE réelle et lève une exception explicite en cas
         d'échec — utilisé par le config flow (test-before-configure) et par la
-        configuration initiale de l'intégration (test-before-setup)."""
-        await self._ensure_connected()
+        configuration initiale de l'intégration (test-before-setup).
+
+        `establish_connection` retente en interne sans limite de temps propre ;
+        sans ce timeout explicite, `async_setup_entry` peut rester bloqué en
+        "Initializing" indéfiniment si la centrale est injoignable au démarrage
+        (ex. déjà connectée à l'app officielle), au lieu d'échouer proprement et
+        de laisser Home Assistant gérer les nouvelles tentatives."""
+        async with asyncio.timeout(timeout):
+            await self._ensure_connected()
 
     async def set_enabled(self, enabled: bool) -> None:
         """Active/désactive la connexion BLE. Utile pour libérer la centrale (une seule
