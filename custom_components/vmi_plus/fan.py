@@ -1,8 +1,6 @@
 """Entité fan : vitesse de ventilation (registre 0x18) de la centrale VMI+."""
 from __future__ import annotations
 
-from typing import Any
-
 from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
@@ -21,11 +19,17 @@ async def async_setup_entry(
 
 
 class VmiPlusFan(FanEntity):
-    """La centrale VMCI ventile en continu : pas d'état 'off', seulement 3 vitesses."""
+    """La centrale VMCI ventile en continu : pas d'état 'off', seulement 3 vitesses.
+
+    `_enable_turn_on_off_backwards_compatibility = False` est nécessaire pour empêcher
+    Home Assistant d'ajouter automatiquement un bouton "Off" de compatibilité — sans ça,
+    HA suppose par défaut qu'une entité fan supportant SET_SPEED peut aussi s'éteindre.
+    """
 
     _attr_has_entity_name = True
     _attr_name = "Ventilation"
     _attr_supported_features = FanEntityFeature.SET_SPEED
+    _enable_turn_on_off_backwards_compatibility = False
     _attr_speed_count = SPEED_COUNT
     _attr_is_on = True
 
@@ -44,11 +48,3 @@ class VmiPlusFan(FanEntity):
         await self._device.write_register(REG_SPEED, SPEED_VALUES[level])
         self._attr_percentage = LEVEL_TO_PERCENT[level]
         self.async_write_ha_state()
-
-    async def async_turn_on(
-        self,
-        percentage: int | None = None,
-        preset_mode: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        await self.async_set_percentage(percentage or LEVEL_TO_PERCENT[1])

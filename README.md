@@ -42,10 +42,14 @@ Entités créées :
 - `switch.connexion_bluetooth` — active/désactive la connexion BLE (utile pour libérer la
   centrale au profit de l'app officielle, une seule connexion GATT possible à la fois)
 
-Ce code n'a pas été testé à l'intérieur d'une vraie instance Home Assistant (pas d'accès à
-une instance depuis cette session) — seule la couche protocole/BLE bas niveau (`protocol.py`,
-`device.py`) reprend exactement ce qui a été vérifié en capture réelle. Si une entité ne se
-comporte pas comme prévu, regarde les logs HA (`custom_components.vmi_plus`) en premier.
+**Testé et fonctionnel en conditions réelles** (vitesse, boost) sur une vraie instance HA.
+
+⚠️ **Limitation importante** : les états affichés dans HA (`66%`, `Boost: On`...) sont purement
+optimistes — c'est la mémoire de la dernière commande *envoyée par HA*, pas une lecture réelle
+de l'appareil. Si tu changes une vitesse via l'app officielle ou la télécommande physique, HA
+ne le saura pas et affichera un état obsolète jusqu'à sa prochaine commande. Ça vaut aussi pour
+le switch "Connexion Bluetooth" : le désactiver coupe les écritures, mais aucune lecture
+n'était de toute façon en cours (pas de télémétrie décodée, voir PROTOCOL.md).
 
 ## 3. Prochaines étapes possibles
 
