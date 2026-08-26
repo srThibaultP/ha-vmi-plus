@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .device import VmiPlusDevice
 
-PLATFORMS: list[Platform] = [Platform.FAN, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.SELECT, Platform.SWITCH]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

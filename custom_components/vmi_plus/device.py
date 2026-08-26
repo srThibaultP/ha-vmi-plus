@@ -1,4 +1,4 @@
-"""Wrapper BLE pour une centrale VMI+, partagé entre les entités fan/switch."""
+"""Wrapper BLE pour une centrale VMI+, partagé entre les entités select/switch."""
 from __future__ import annotations
 
 import asyncio

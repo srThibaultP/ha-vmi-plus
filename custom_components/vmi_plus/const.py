@@ -13,6 +13,4 @@ REG_SPEED = 0x18
 REG_BOOST = 0x19
 REG_BYPASS = 0x2F
 
-SPEED_VALUES = {1: 0x00, 2: 0x01, 3: 0x02}
-LEVEL_TO_PERCENT = {1: 33, 2: 66, 3: 100}
-SPEED_COUNT = 3
+SPEED_OPTIONS = {"Vitesse 1": 0x00, "Vitesse 2": 0x01, "Vitesse 3": 0x02}

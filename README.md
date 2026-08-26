@@ -36,7 +36,9 @@ apparaître) ; sinon, ajoute-la manuellement via Paramètres → Appareils → A
 intégration → "VMI+ (Ventilairsec)" et saisis l'adresse MAC.
 
 Entités créées :
-- `fan.ventilation` — vitesse 1/2/3
+- `select.vitesse` — vitesse 1/2/3 (entité `select` et non `fan` : la centrale ventile en
+  continu et ne peut pas être éteinte, alors que le domaine `fan` de HA impose toujours une
+  position "Off")
 - `switch.boost` — surventilation 30 min
 - `switch.bypass` — contournement de l'échangeur (préchauffage gratuit de l'air, utile en hiver)
 - `switch.connexion_bluetooth` — active/désactive la connexion BLE (utile pour libérer la
