@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to a VMI+ ventilation unit",
+        "description": "Select the detected unit, or enter its Bluetooth MAC address manually.",
+        "data": {
+          "address": "Address"
+        }
+      },
+      "confirm": {
+        "title": "Connect to the VMI+ ventilation unit?",
+        "description": "Do you want to set up this VMI+ ventilation unit?"
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the unit over Bluetooth. Make sure it is powered, in range, and not already connected to the official VMI+ app."
+    },
+    "abort": {
+      "cannot_connect": "Could not connect to the unit over Bluetooth. Make sure it is powered, in range, and not already connected to the official VMI+ app."
+    }
+  }
+}

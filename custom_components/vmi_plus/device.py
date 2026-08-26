@@ -38,12 +38,23 @@ class VmiPlusDevice:
         self._update_callbacks: list[Callable[[], None]] = []
         self._poll_task: asyncio.Task | None = None
         self._notifying = False
+        self._was_available = True
 
     def add_update_listener(self, callback: Callable[[], None]) -> Callable[[], None]:
         """Enregistre un callback appelé à chaque nouvelle donnée de télémétrie.
         Retourne une fonction pour se désinscrire."""
         self._update_callbacks.append(callback)
         return lambda: self._update_callbacks.remove(callback)
+
+    @property
+    def is_connected(self) -> bool:
+        return self._client is not None and self._client.is_connected
+
+    async def async_verify_connection(self) -> None:
+        """Tente une connexion BLE réelle et lève une exception explicite en cas
+        d'échec — utilisé par le config flow (test-before-configure) et par la
+        configuration initiale de l'intégration (test-before-setup)."""
+        await self._ensure_connected()
 
     async def set_enabled(self, enabled: bool) -> None:
         """Active/désactive la connexion BLE. Utile pour libérer la centrale (une seule
@@ -108,8 +119,17 @@ class VmiPlusDevice:
             try:
                 if self.enabled:
                     await self._poll_once()
+                if self.is_connected and not self._was_available:
+                    _LOGGER.info("Centrale VMI+ %s de nouveau joignable", self.address)
+                    self._was_available = True
             except Exception:  # noqa: BLE001 - ne doit jamais tuer la tâche de fond
                 _LOGGER.debug("Échec du polling télémétrie VMI+ %s", self.address, exc_info=True)
+                if self._was_available:
+                    _LOGGER.warning(
+                        "Centrale VMI+ %s injoignable, nouvelle tentative en arrière-plan",
+                        self.address,
+                    )
+                    self._was_available = False
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
 
     def start_polling(self) -> None:

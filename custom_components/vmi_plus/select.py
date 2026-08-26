@@ -12,25 +12,27 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, REG_SPEED, SPEED_OPTIONS
+from .const import REG_SPEED, SPEED_OPTIONS
 from .device import VmiPlusDevice
+from .entity import VmiPlusEntity
+
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    device: VmiPlusDevice = hass.data[DOMAIN][entry.entry_id]
+    device: VmiPlusDevice = entry.runtime_data
     async_add_entities([VmiPlusSpeedSelect(device, entry)])
 
 
-class VmiPlusSpeedSelect(SelectEntity):
-    _attr_has_entity_name = True
+class VmiPlusSpeedSelect(VmiPlusEntity, SelectEntity):
     _attr_name = "Vitesse"
     _attr_icon = "mdi:fan"
     _attr_options = list(SPEED_OPTIONS)
 
     def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
-        self._device = device
+        super().__init__(device, entry)
         self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_speed"
         self._attr_current_option: str | None = None
 

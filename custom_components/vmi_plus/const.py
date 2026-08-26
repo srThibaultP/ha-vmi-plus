@@ -1,6 +1,8 @@
 """Constantes pour l'intégration VMI+ (Ventilairsec)."""
 
 DOMAIN = "vmi_plus"
+MANUFACTURER = "Ventilairsec"
+MODEL = "VMCI"
 
 # UUID vérifiés par capture BLE réelle contre une centrale VMCI "Urban".
 # Voir PROTOCOL.md à la racine du dépôt pour le détail de la rétro-ingénierie.

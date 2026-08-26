@@ -1,7 +1,7 @@
 {
   "domain": "vmi_plus",
   "name": "VMI+ (Ventilairsec)",
-  "codeowners": [],
+  "codeowners": ["@srThibaultP"],
   "config_flow": true,
   "bluetooth": [
     {
@@ -10,7 +10,8 @@
   ],
   "dependencies": ["bluetooth"],
   "documentation": "https://github.com/srThibaultP/ha-vmi-plus",
-  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/srThibaultP/ha-vmi-plus/issues",
+  "iot_class": "local_polling",
   "requirements": ["bleak-retry-connector>=3.0.0"],
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

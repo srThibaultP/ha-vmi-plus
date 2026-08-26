@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connexion à une centrale de ventilation VMI+",
+        "description": "Choisissez la centrale détectée, ou saisissez son adresse MAC Bluetooth manuellement.",
+        "data": {
+          "address": "Adresse"
+        }
+      },
+      "confirm": {
+        "title": "Connecter cette centrale VMI+ ?",
+        "description": "Voulez-vous configurer cette centrale de ventilation VMI+ ?"
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter à la centrale en Bluetooth. Vérifiez qu'elle est alimentée, à portée, et qu'elle n'est pas déjà connectée à l'app VMI+ officielle."
+    },
+    "abort": {
+      "cannot_connect": "Impossible de se connecter à la centrale en Bluetooth. Vérifiez qu'elle est alimentée, à portée, et qu'elle n'est pas déjà connectée à l'app VMI+ officielle."
+    }
+  }
+}

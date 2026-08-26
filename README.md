@@ -36,6 +36,10 @@ l'intégration Bluetooth (Paramètres → Appareils → une notification de déc
 apparaître) ; sinon, ajoute-la manuellement via Paramètres → Appareils → Ajouter une
 intégration → "VMI+ (Ventilairsec)" et saisis l'adresse MAC.
 
+Toutes les entités sont regroupées sous un seul **appareil** (nommé d'après la centrale
+détectée, ex. "Urban") — Paramètres → Appareils et services → Appareils → cet appareil →
+crayon ✏️ pour lui assigner une pièce.
+
 Entités créées :
 - `select.vitesse` — vitesse 1/2/3 (entité `select` et non `fan` : la centrale ventile en
   continu et ne peut pas être éteinte, alors que le domaine `fan` de HA impose toujours une
@@ -74,7 +78,15 @@ encore branché sur ces entités — piste d'amélioration future.
 boost, bypass, sondes) avec les entités ci-dessus — uniquement des cartes intégrées à Home
 Assistant, rien à installer en plus. Voir l'en-tête du fichier pour l'installation.
 
-## 4. Prochaines étapes possibles
+## 4. Désinstaller
+
+Paramètres → Appareils et services → cette intégration → ⋮ → Supprimer (ou depuis HACS :
+Intégrations → VMI+ → ⋮ → Supprimer). Supprime aussi le dossier
+`custom_components/vmi_plus/` si l'intégration a été installée manuellement plutôt que via
+HACS. Aucune donnée n'est stockée côté centrale — la retirer côté Home Assistant n'affecte
+pas l'app officielle ni la centrale elle-même.
+
+## 5. Prochaines étapes possibles
 
 Voir la section "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md) — principalement le
 décodage de la télémétrie pour avoir des sensors (humidité, filtre, RPM) plutôt que juste du

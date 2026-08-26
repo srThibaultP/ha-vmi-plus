@@ -15,49 +15,49 @@ from homeassistant.const import CONF_ADDRESS, PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
 from .device import VmiPlusDevice
+from .entity import VmiPlusEntity
+
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    device: VmiPlusDevice = hass.data[DOMAIN][entry.entry_id]
-    address = entry.data[CONF_ADDRESS]
+    device: VmiPlusDevice = entry.runtime_data
     async_add_entities(
         [
-            VmiPlusSensor(device, address, "probe", "temperature", "Température sonde interne",
+            VmiPlusSensor(device, entry, "probe", "temperature", "Température sonde interne",
                            SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS),
-            VmiPlusSensor(device, address, "probe", "humidity", "Humidité sonde interne",
+            VmiPlusSensor(device, entry, "probe", "humidity", "Humidité sonde interne",
                            SensorDeviceClass.HUMIDITY, PERCENTAGE),
-            VmiPlusSensor(device, address, "remote", "temperature", "Température pièce",
+            VmiPlusSensor(device, entry, "remote", "temperature", "Température pièce",
                            SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS),
-            VmiPlusSensor(device, address, "remote", "humidity", "Humidité pièce",
+            VmiPlusSensor(device, entry, "remote", "humidity", "Humidité pièce",
                            SensorDeviceClass.HUMIDITY, PERCENTAGE),
         ]
     )
     device.start_polling()
 
 
-class VmiPlusSensor(SensorEntity):
-    _attr_has_entity_name = True
+class VmiPlusSensor(VmiPlusEntity, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(
         self,
         device: VmiPlusDevice,
-        address: str,
+        entry: ConfigEntry,
         telemetry_type: str,
         field: str,
         name: str,
         device_class: SensorDeviceClass,
         unit: str,
     ) -> None:
-        self._device = device
+        super().__init__(device, entry)
         self._telemetry_type = telemetry_type
         self._field = field
         self._attr_name = name
-        self._attr_unique_id = f"{address}_{telemetry_type}_{field}"
+        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{telemetry_type}_{field}"
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
 
