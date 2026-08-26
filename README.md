@@ -6,9 +6,9 @@ Intégration non-officielle pour piloter en Bluetooth Low Energy une centrale de
 **VMI+ / VMCI (Ventilairsec)**, reverse-engineered à partir de l'app Android officielle et
 d'une capture BLE réelle. Détails complets du protocole : [PROTOCOL.md](PROTOCOL.md).
 
-**Vérifié contre du matériel réel** : vitesse (1/2/3), Boost, et un 3e registre (probable
-Bypass). **Pas encore fait** : décodage des capteurs (humidité, % filtre, RPM) — le canal
-existe et pousse des données, mais sa structure interne n'est pas décodée.
+**Vérifié contre du matériel réel** : vitesse (1/2/3), Boost, Bypass, et température/humidité
+des deux sondes (interne + télécommande/pièce). **Pas encore fait** : % de filtre, numéros de
+série, historique — voir "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md).
 
 ## 1. Tester d'abord en ligne de commande
 
@@ -22,6 +22,7 @@ python3 vmi_ble.py scan
 python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF speed 2
 python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF boost on
 python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF bypass on
+python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF monitor   # température/humidité en direct
 ```
 
 ⚠️ La centrale n'accepte qu'une connexion BLE à la fois — ferme l'app VMI+ sur ton téléphone
@@ -43,15 +44,24 @@ Entités créées :
 - `switch.bypass` — contournement de l'échangeur (préchauffage gratuit de l'air, utile en hiver)
 - `switch.connexion_bluetooth` — active/désactive la connexion BLE (utile pour libérer la
   centrale au profit de l'app officielle, une seule connexion GATT possible à la fois)
+- `sensor.temperature_sonde_interne` / `sensor.humidite_sonde_interne` — sonde interne
+  (ex. sortie résistance de préchauffage)
+- `sensor.temperature_piece` / `sensor.humidite_piece` — sonde télécommande de la pièce
+  ventilée (ex. salle de bain)
 
-**Testé et fonctionnel en conditions réelles** (vitesse, boost) sur une vraie instance HA.
+Les sensors sont alimentés par un polling automatique toutes les 10s (démarré dès qu'une
+entité sensor est chargée) — pas besoin de configuration supplémentaire.
 
-⚠️ **Limitation importante** : les états affichés dans HA (`66%`, `Boost: On`...) sont purement
-optimistes — c'est la mémoire de la dernière commande *envoyée par HA*, pas une lecture réelle
-de l'appareil. Si tu changes une vitesse via l'app officielle ou la télécommande physique, HA
-ne le saura pas et affichera un état obsolète jusqu'à sa prochaine commande. Ça vaut aussi pour
-le switch "Connexion Bluetooth" : le désactiver coupe les écritures, mais aucune lecture
-n'était de toute façon en cours (pas de télémétrie décodée, voir PROTOCOL.md).
+**Testé et fonctionnel en conditions réelles** (vitesse, boost, lecture des sondes) sur une
+vraie instance HA.
+
+⚠️ **Limitation** : `select.vitesse`, `switch.boost` et `switch.bypass` restent optimistes —
+c'est la mémoire de la dernière commande *envoyée par HA*, pas une lecture réelle de l'appareil
+(contrairement aux sensors température/humidité, qui eux sont de vraies lectures). Si tu changes
+une vitesse via l'app officielle ou la télécommande physique, ces trois entités resteront
+obsolètes jusqu'à leur prochaine commande depuis HA. Le statut vitesse/boost/bypass est en
+réalité aussi diffusé par la centrale (notification type `0x01`, voir PROTOCOL.md) mais pas
+encore branché sur ces entités — piste d'amélioration future.
 
 ## 3. Prochaines étapes possibles
 

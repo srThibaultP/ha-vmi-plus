@@ -22,3 +22,27 @@ def build_frame(register: int, value: int) -> bytes:
     """Construit une trame de commande registre/valeur de 11 octets."""
     data = bytes([0xA5, 0xB6, 0x10, 0x06, 0x05, register, 0, 0, 0, value])
     return data + bytes([checksum(data)])
+
+
+def parse_notification(data: bytes) -> dict | None:
+    """Décode une notification de télémétrie (voir PROTOCOL.md, section Télémétrie).
+
+    Retourne un dict {"type": ..., ...champs...} pour les types reconnus
+    (probe/remote), ou None pour un type non décodé ou une trame trop courte.
+    """
+    if len(data) < 3 or data[0] != 0xA5 or data[1] != 0xB6:
+        return None
+
+    frame_type = data[2]
+
+    if frame_type == 0x03 and len(data) >= 9:
+        # Sonde interne "Probe N°1" (ex. sortie résistance), déclenchée par
+        # l'écriture du registre 0x07.
+        return {"type": "probe", "temperature": data[6], "humidity": data[8]}
+
+    if frame_type == 0x02 and len(data) >= 14:
+        # Sonde télécommande / pièce ventilée (ex. "Bathroom 1"), déclenchée
+        # par l'écriture du registre 0x06.
+        return {"type": "remote", "temperature": data[11], "humidity": data[13]}
+
+    return None

@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .device import VmiPlusDevice
 
-PLATFORMS: list[Platform] = [Platform.SELECT, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -22,5 +22,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         device: VmiPlusDevice = hass.data[DOMAIN].pop(entry.entry_id)
-        await device.disconnect()
+        await device.async_shutdown()
     return unload_ok

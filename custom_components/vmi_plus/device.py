@@ -1,28 +1,49 @@
-"""Wrapper BLE pour une centrale VMI+, partagé entre les entités select/switch."""
+"""Wrapper BLE pour une centrale VMI+, partagé entre les entités select/switch/sensor."""
 from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant
 
-from .const import CHAR_CONTROL_UUID
-from .protocol import build_frame
+from .const import (
+    CHAR_CONTROL_UUID,
+    CHAR_TELEMETRY_UUID,
+    POLL_INTERVAL_SECONDS,
+    POLL_REG_PROBE,
+    POLL_REG_REMOTE,
+    POLL_REG_STATUS,
+)
+from .protocol import build_frame, parse_notification
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class VmiPlusDevice:
-    """Gère une connexion GATT persistante (reconnexion à la demande) vers la centrale."""
+    """Gère une connexion GATT persistante (reconnexion à la demande) vers la centrale,
+    l'écoute des notifications de télémétrie, et le polling périodique qui les déclenche."""
 
     def __init__(self, hass: HomeAssistant, address: str) -> None:
         self.hass = hass
         self.address = address
         self.enabled = True
+        # Dernières valeurs connues par sonde ("probe" = sonde interne, "remote" =
+        # sonde télécommande/pièce), mises à jour au fil des notifications reçues.
+        self.telemetry: dict[str, dict] = {}
         self._client: BleakClientWithServiceCache | None = None
         self._lock = asyncio.Lock()
+        self._update_callbacks: list[Callable[[], None]] = []
+        self._poll_task: asyncio.Task | None = None
+        self._notifying = False
+
+    def add_update_listener(self, callback: Callable[[], None]) -> Callable[[], None]:
+        """Enregistre un callback appelé à chaque nouvelle donnée de télémétrie.
+        Retourne une fonction pour se désinscrire."""
+        self._update_callbacks.append(callback)
+        return lambda: self._update_callbacks.remove(callback)
 
     async def set_enabled(self, enabled: bool) -> None:
         """Active/désactive la connexion BLE. Utile pour libérer la centrale (une seule
@@ -53,6 +74,7 @@ class VmiPlusDevice:
         self._client = await establish_connection(
             BleakClientWithServiceCache, ble_device, self.address
         )
+        self._notifying = False
         return self._client
 
     async def write_register(self, register: int, value: int) -> None:
@@ -62,7 +84,47 @@ class VmiPlusDevice:
             client = await self._ensure_connected()
             await client.write_gatt_char(CHAR_CONTROL_UUID, frame, response=True)
 
+    def _handle_notification(self, _char, data: bytearray) -> None:
+        parsed = parse_notification(bytes(data))
+        if parsed is None:
+            return
+        self.telemetry[parsed["type"]] = parsed
+        for callback in list(self._update_callbacks):
+            callback()
+
+    async def _poll_once(self) -> None:
+        """Déclenche les trois notifications de télémétrie (voir PROTOCOL.md)."""
+        async with self._lock:
+            client = await self._ensure_connected()
+            if not self._notifying:
+                await client.start_notify(CHAR_TELEMETRY_UUID, self._handle_notification)
+                self._notifying = True
+            for register in (POLL_REG_STATUS, POLL_REG_PROBE, POLL_REG_REMOTE):
+                frame = build_frame(register, 0x00)
+                await client.write_gatt_char(CHAR_CONTROL_UUID, frame, response=True)
+
+    async def _poll_loop(self) -> None:
+        while True:
+            try:
+                if self.enabled:
+                    await self._poll_once()
+            except Exception:  # noqa: BLE001 - ne doit jamais tuer la tâche de fond
+                _LOGGER.debug("Échec du polling télémétrie VMI+ %s", self.address, exc_info=True)
+            await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+    def start_polling(self) -> None:
+        """Démarre la tâche de fond qui interroge périodiquement la télémétrie."""
+        if self._poll_task is None or self._poll_task.done():
+            self._poll_task = self.hass.loop.create_task(self._poll_loop())
+
     async def disconnect(self) -> None:
         if self._client is not None:
             await self._client.disconnect()
             self._client = None
+        self._notifying = False
+
+    async def async_shutdown(self) -> None:
+        if self._poll_task is not None:
+            self._poll_task.cancel()
+            self._poll_task = None
+        await self.disconnect()

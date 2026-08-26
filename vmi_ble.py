@@ -11,7 +11,8 @@ Usage:
     python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF boost on|off
     python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF bypass on|off
     python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF raw --reg 0x18 --val 0x02
-    python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF listen   # affiche les notifications brutes
+    python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF listen    # affiche les notifications brutes
+    python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF monitor   # affiche température/humidité décodées
 """
 import argparse
 import asyncio
@@ -27,6 +28,12 @@ CHAR_TELEMETRY_UUID = "0003caa2-0000-1000-8000-00805f9b0131"
 REG_SPEED = 0x18
 REG_BOOST = 0x19
 REG_BYPASS = 0x2F
+
+# Registres de lecture : l'écriture déclenche une notification de télémétrie,
+# elle ne modifie aucun état de la centrale (voir PROTOCOL.md).
+REG_POLL_STATUS = 0x03  # -> notification type 0x01
+REG_POLL_REMOTE = 0x06  # -> notification type 0x02 (sonde télécommande/pièce)
+REG_POLL_PROBE = 0x07  # -> notification type 0x03 (sonde interne)
 
 SPEED_VALUES = {1: 0x00, 2: 0x01, 3: 0x02}
 
@@ -46,6 +53,18 @@ def checksum(data: bytes) -> int:
 def build_frame(register: int, value: int) -> bytes:
     data = bytes([0xA5, 0xB6, 0x10, 0x06, 0x05, register, 0, 0, 0, value])
     return data + bytes([checksum(data)])
+
+
+def parse_notification(data: bytes) -> dict | None:
+    """Décode une notification de télémétrie (voir PROTOCOL.md, section Télémétrie)."""
+    if len(data) < 3 or data[0] != 0xA5 or data[1] != 0xB6:
+        return None
+    frame_type = data[2]
+    if frame_type == 0x03 and len(data) >= 9:
+        return {"type": "probe", "temperature": data[6], "humidity": data[8]}
+    if frame_type == 0x02 and len(data) >= 14:
+        return {"type": "remote", "temperature": data[11], "humidity": data[13]}
+    return None
 
 
 async def cmd_scan(_args):
@@ -98,6 +117,30 @@ async def cmd_listen(args):
         await client.stop_notify(CHAR_TELEMETRY_UUID)
 
 
+async def cmd_monitor(args):
+    """Poll les registres de lecture en boucle et affiche température/humidité décodées."""
+
+    def handler(_char, data: bytearray):
+        parsed = parse_notification(bytes(data))
+        if parsed is None:
+            return
+        label = "Sonde interne" if parsed["type"] == "probe" else "Sonde pièce"
+        print(f"{label:15s} {parsed['temperature']:3d}°C  {parsed['humidity']:3d}%")
+
+    async with BleakClient(args.address) as client:
+        await client.start_notify(CHAR_TELEMETRY_UUID, handler)
+        print("Polling toutes les 10s (Ctrl+C pour arrêter)...")
+        try:
+            while True:
+                for register in (REG_POLL_STATUS, REG_POLL_PROBE, REG_POLL_REMOTE):
+                    frame = build_frame(register, 0x00)
+                    await client.write_gatt_char(CHAR_CONTROL_UUID, frame, response=True)
+                await asyncio.sleep(10)
+        except KeyboardInterrupt:
+            pass
+        await client.stop_notify(CHAR_TELEMETRY_UUID)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--address", help="Adresse MAC (ou UUID sur macOS) de la centrale")
@@ -124,6 +167,9 @@ def main():
 
     p = sub.add_parser("listen")
     p.set_defaults(func=cmd_listen)
+
+    p = sub.add_parser("monitor")
+    p.set_defaults(func=cmd_monitor)
 
     args = parser.parse_args()
     if args.command != "scan" and not args.address:
