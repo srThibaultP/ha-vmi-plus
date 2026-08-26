@@ -1,4 +1,4 @@
-<p align="center"><img src="images/logo.png" width="96" alt="Logo VMI+"></p>
+<p align="center"><img src="logo.png" width="96" alt="Logo VMI+"></p>
 
 # VMI+ → Home Assistant
 
