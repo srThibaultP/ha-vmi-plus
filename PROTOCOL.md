@@ -11,6 +11,7 @@ Statut : **le canal de commande (contrôle vitesse/boost/bypass) et une partie d
 - Bluetooth Low Energy standard, **sans appairage/chiffrement** (aucun échange SMP observé dans la capture — GATT en clair).
 - Découverte : filtrer sur le nom annoncé (ex. `"Urban"`) ou sur l'UUID de service ci-dessous.
 - Une seule connexion GATT centrale à la fois (déconnecter l'app officielle si elle est déjà connectée).
+- L'app officielle demande de scanner un QR code sur la centrale à la toute première connexion. Vu l'absence totale de pairing/chiffrement BLE confirmée ci-dessus, ce n'est très probablement **pas** un mécanisme de sécurité du protocole — plus vraisemblablement un raccourci pour renseigner automatiquement l'adresse MAC/n° de série dans l'app (évite la saisie manuelle) et/ou associer la centrale au compte de l'installateur côté app. Sans effet sur `vmi_plus`, qui connaît déjà l'adresse MAC directement (découverte Bluetooth ou saisie manuelle) — aucun scan requis.
 
 ## Services et caractéristiques (famille VMCI)
 
