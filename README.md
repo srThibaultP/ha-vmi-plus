@@ -40,23 +40,27 @@ Toutes les entités sont regroupées sous un seul **appareil** (nommé d'après 
 détectée, ex. "Urban") — Paramètres → Appareils et services → Appareils → cet appareil →
 crayon ✏️ pour lui assigner une pièce.
 
-Entités créées :
-- `select.vitesse` — vitesse 1/2/3 (entité `select` et non `fan` : la centrale ventile en
-  continu et ne peut pas être éteinte, alors que le domaine `fan` de HA impose toujours une
-  position "Off")
-- `switch.boost` — surventilation 30 min
-- `switch.bypass` — contournement de l'échangeur (préchauffage gratuit de l'air, utile en hiver)
-- `switch.connexion_bluetooth` — active/désactive la connexion BLE (utile pour libérer la
-  centrale au profit de l'app officielle, une seule connexion GATT possible à la fois)
-- `sensor.temperature_sonde_interne` / `sensor.humidite_sonde_interne` — sonde interne
-  (ex. sortie résistance de préchauffage)
-- `sensor.temperature_piece` / `sensor.humidite_piece` — sonde télécommande de la pièce
-  ventilée (ex. salle de bain)
-- `binary_sensor.mode_nuit` — statut réel (lu sur l'appareil, pas juste optimiste) du mode
-  "Night ventilation boost" (sur-ventilation nocturne gratuite été/préchauffage passif hiver).
-  **Lecture seule** : la commande d'écriture pour ce mode n'est pas encore fiabilisée, voir
-  PROTOCOL.md — pour le changer, utiliser l'app officielle (Configuration → Special modes),
-  cette entité se met à jour au poll suivant (10s).
+Entités créées (l'entity_id complet dépend du nom de ton appareil — ex. pour un appareil
+nommé "Urban" : `select.urban_vitesse`, `switch.urban_boost`... vérifiable dans Outils de
+développement → États) :
+- **Vitesse** (`select`, suffixe `_vitesse`) — vitesse 1/2/3 (entité `select` et non `fan` :
+  la centrale ventile en continu et ne peut pas être éteinte, alors que le domaine `fan` de HA
+  impose toujours une position "Off")
+- **Boost** (`switch`, suffixe `_boost`) — surventilation 30 min
+- **Bypass** (`switch`, suffixe `_bypass`) — contournement de l'échangeur (préchauffage gratuit
+  de l'air, utile en hiver)
+- **Connexion Bluetooth** (`switch`, suffixe `_connexion_bluetooth`) — active/désactive la
+  connexion BLE (utile pour libérer la centrale au profit de l'app officielle, une seule
+  connexion GATT possible à la fois)
+- **Température/Humidité sonde interne** (`sensor`, suffixes `_temperature_sonde_interne` /
+  `_humidite_sonde_interne`) — sonde interne (ex. sortie résistance de préchauffage)
+- **Température/Humidité pièce** (`sensor`, suffixes `_temperature_piece` / `_humidite_piece`)
+  — sonde télécommande de la pièce ventilée (ex. salle de bain)
+- **Mode nuit** (`binary_sensor`, suffixe `_mode_nuit`) — statut réel (lu sur l'appareil, pas
+  juste optimiste) du mode "Night ventilation boost" (sur-ventilation nocturne gratuite été/
+  préchauffage passif hiver). **Lecture seule** : la commande d'écriture pour ce mode n'est pas
+  encore fiabilisée, voir PROTOCOL.md — pour le changer, utiliser l'app officielle
+  (Configuration → Special modes), cette entité se met à jour au poll suivant (10s).
 
 Les sensors sont alimentés par un polling automatique toutes les 10s (démarré dès qu'une
 entité sensor est chargée) — pas besoin de configuration supplémentaire.
@@ -64,7 +68,7 @@ entité sensor est chargée) — pas besoin de configuration supplémentaire.
 **Testé et fonctionnel en conditions réelles** (vitesse, boost, lecture des sondes) sur une
 vraie instance HA.
 
-⚠️ **Limitation** : `select.vitesse`, `switch.boost` et `switch.bypass` restent optimistes —
+⚠️ **Limitation** : Vitesse, Boost et Bypass restent optimistes —
 c'est la mémoire de la dernière commande *envoyée par HA*, pas une lecture réelle de l'appareil
 (contrairement aux sensors température/humidité, qui eux sont de vraies lectures). Si tu changes
 une vitesse via l'app officielle ou la télécommande physique, ces trois entités resteront
@@ -76,7 +80,8 @@ encore branché sur ces entités — piste d'amélioration future.
 
 [`dashboard.yaml`](dashboard.yaml) reprend la mise en page de l'app officielle (vitesse,
 boost, bypass, sondes) avec les entités ci-dessus — uniquement des cartes intégrées à Home
-Assistant, rien à installer en plus. Voir l'en-tête du fichier pour l'installation.
+Assistant, rien à installer en plus. Voir l'en-tête du fichier pour l'installation (et pour
+le rappel d'adapter le préfixe des entity_id au nom de ton propre appareil).
 
 ## 4. Désinstaller
 

@@ -9,6 +9,13 @@
 # Toutes les entités référencées existent déjà dans l'intégration vmi_plus —
 # aucune carte custom (HACS frontend) requise, uniquement des cartes intégrées
 # à Home Assistant (tile, gauge, grid).
+#
+# ⚠️ Adapte le préfixe "urban_" des entity_id ci-dessous : Home Assistant le
+# génère à partir du nom de TON appareil (Paramètres → Appareils → VMI+ →
+# nom en haut de page), pas du nom de l'intégration. Si tu as renommé
+# l'appareil, ou si la centrale s'est annoncée sous un autre nom que "Urban"
+# à la découverte, ajuste en conséquence (vérifiable dans Outils de
+# développement → États).
 
 title: VMI+
 views:
@@ -20,7 +27,7 @@ views:
         content: "## 🌀 Ventilation"
 
       - type: tile
-        entity: select.vitesse
+        entity: select.urban_vitesse
         name: Vitesse
         icon: mdi:fan
         features_position: bottom
@@ -32,18 +39,18 @@ views:
         square: false
         cards:
           - type: tile
-            entity: switch.boost
+            entity: switch.urban_boost
             name: Boost 30 min
             icon: mdi:fan-plus
             vertical: true
           - type: tile
-            entity: switch.bypass
+            entity: switch.urban_bypass
             name: Bypass (air neuf direct)
             icon: mdi:heat-wave
             vertical: true
 
       - type: tile
-        entity: binary_sensor.mode_nuit
+        entity: binary_sensor.urban_mode_nuit
         name: Mode nuit (sur-ventilation gratuite)
         icon: mdi:weather-night
         vertical: false
@@ -56,7 +63,7 @@ views:
         square: false
         cards:
           - type: gauge
-            entity: sensor.humidite_sonde_interne
+            entity: sensor.urban_humidite_sonde_interne
             name: Humidité — sonde interne
             min: 0
             max: 100
@@ -66,7 +73,7 @@ views:
               yellow: 60
               red: 80
           - type: gauge
-            entity: sensor.humidite_piece
+            entity: sensor.urban_humidite_piece
             name: Humidité — pièce (salle de bain)
             min: 0
             max: 100
@@ -81,11 +88,11 @@ views:
         square: false
         cards:
           - type: tile
-            entity: sensor.temperature_sonde_interne
+            entity: sensor.urban_temperature_sonde_interne
             name: Température — sonde interne
             icon: mdi:thermometer
           - type: tile
-            entity: sensor.temperature_piece
+            entity: sensor.urban_temperature_piece
             name: Température — pièce
             icon: mdi:thermometer
 
@@ -93,7 +100,7 @@ views:
         content: "## ⚙️ Connexion"
 
       - type: tile
-        entity: switch.connexion_bluetooth
+        entity: switch.urban_connexion_bluetooth
         name: Connexion Bluetooth
         icon: mdi:bluetooth
 
