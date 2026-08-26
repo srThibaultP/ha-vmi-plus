@@ -152,9 +152,9 @@ Chaîne trouvée dans le binaire de l'app, dont le rôle n'était pas clair au d
 ## Ce qui reste à faire
 
 1. Confirmer la sémantique d'écriture du registre `0x0b` (bascule vs. valeur explicite — voir type `0x01` ci-dessus) avant d'exposer "Mode nuit" en écriture.
-2. Localiser les registres des 3 autres modes spéciaux : Holiday mode (activé une fois avec succès mais trame non capturée, le buffer BTSnoop ayant tourné avant l'extraction), Boost mode 30 min, Fixed air flow rate mode (aucun des deux testés).
+2. Localiser les registres des modes spéciaux restants : Holiday mode (activé une fois avec succès mais trame non capturée, le buffer BTSnoop ayant tourné avant l'extraction) et Fixed air flow rate mode (jamais testé). "Boost mode 30 min" de l'écran Special modes est confirmé (par l'utilisateur) être le même contrôle que le bouton Boost du Dashboard principal — déjà couvert par `switch.*_boost` (registre `0x19`), rien à faire de plus ici.
 3. Localiser le **% de filtre** et les **numéros de série** — cf. section "Equipment life" ci-dessus (nécessite de capturer un tout premier appairage).
 4. Décoder le tableau de 10 blocs du type `0x02` (historique horaire ?).
 5. Vérifier si offset `[34]` du type `0x01` encode bien la vitesse (un seul échantillon pour l'instant).
-6. **Tester la famille EXTRACTOR** si l'utilisateur possède aussi ce type d'appareil (UUID différents, non capturés ici).
+6. **Famille EXTRACTOR** (UUID différents, non capturés ici) — hors scope pour ce projet, l'utilisateur ne possède pas ce type d'appareil. Reste valable pour un futur contributeur qui en aurait un.
 7. Vérifier si les handles ATT (`0x0013`/`0x000e`) sont stables entre reconnexions/redémarrages de la centrale, ou s'il vaut mieux toujours résoudre par UUID (recommandé, déjà fait dans le code fourni).
