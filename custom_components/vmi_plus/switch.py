@@ -9,7 +9,7 @@ from homeassistant.const import CONF_ADDRESS, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import REG_BOOST, REG_BYPASS
+from .const import REG_BOOST, REG_BYPASS, REG_HOLIDAY
 from .device import VmiPlusDevice
 from .entity import VmiPlusEntity
 
@@ -24,6 +24,7 @@ async def async_setup_entry(
         [
             VmiPlusSwitch(device, entry, "boost", "Boost", REG_BOOST),
             VmiPlusSwitch(device, entry, "bypass", "Bypass", REG_BYPASS),
+            VmiPlusSwitch(device, entry, "holiday", "Holiday", REG_HOLIDAY),
             VmiPlusConnectionSwitch(device, entry),
         ]
     )

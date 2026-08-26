@@ -52,6 +52,7 @@ A5 B6 10 06 05 [REG] 00 00 00 [VAL] [CRC]
 | `0x18` | Vitesse de ventilation | `0x00`=vitesse 1, `0x01`=vitesse 2, `0x02`=vitesse 3 |
 | `0x19` | Boost (surventilation 30 min) | `0x00`=off, `0x01`=on |
 | `0x2f` | Bypass (contourne l'échangeur pour faire entrer l'air extérieur/une source chaude directement — utile en hiver pour préchauffer gratuitement, confirmé par l'utilisateur) | `0x00`=off, `0x01`=on |
+| `0x1a` | Holiday mode (écran Special modes, absence prolongée) | `0x00`=off **confirmé par capture réelle** ; `0x01`=on déduit par cohérence avec `0x19`/`0x2f` (même convention 0/1), non observé directement — l'app demande aussi un nombre de jours dans un champ séparé dont le registre n'a pas été identifié |
 | `0x03` | Déclenche une notification **type `0x01`** (statut général : vitesse/boost/bypass, cf. ci-dessus) | — (lecture) |
 | `0x06` | Déclenche une notification **type `0x02`** (sonde télécommande/pièce ventilée, ex. Bathroom 1) | — (lecture) |
 | `0x07` | Déclenche une notification **type `0x03`** (sonde interne "Probe N°1", ex. sortie résistance) | — (lecture) |
@@ -153,7 +154,7 @@ Chaîne trouvée dans le binaire de l'app, dont le rôle n'était pas clair au d
 ## Ce qui reste à faire
 
 1. Confirmer la sémantique d'écriture du registre `0x0b` (bascule vs. valeur explicite — voir type `0x01` ci-dessus) avant d'exposer "Mode nuit" en écriture.
-2. Localiser les registres des modes spéciaux restants : Holiday mode (activé une fois avec succès mais trame non capturée, le buffer BTSnoop ayant tourné avant l'extraction) et Fixed air flow rate mode (jamais testé). "Boost mode 30 min" de l'écran Special modes est confirmé (par l'utilisateur) être le même contrôle que le bouton Boost du Dashboard principal — déjà couvert par `switch.*_boost` (registre `0x19`), rien à faire de plus ici.
+2. ~~Localiser le registre de Holiday mode~~ → trouvé, `0x1a` (voir table ci-dessus), exposé en `switch`. Reste à localiser le registre du nombre de jours (champ séparé dans l'app, non capturé). "Boost mode 30 min" de l'écran Special modes est confirmé (par l'utilisateur) être le même contrôle que le bouton Boost du Dashboard principal — déjà couvert par `switch.*_boost` (registre `0x19`), rien à faire de plus ici. **Fixed air flow rate mode** et **Activating time slots** (Configuration) résistent tous les deux à un simple tap sur leur toggle — aucun changement visuel après plusieurs tentatives, alors que Holiday/Night boost/Boost réagissent immédiatement au même geste. Hypothèse : ces deux modes nécessitent de renseigner une donnée associée (un débit cible en m³/h pour le premier, des horaires pour le second) avant que le toggle n'accepte de s'activer — pas creusé plus loin (nécessiterait de configurer une valeur réelle sur la centrale de l'utilisateur sans supervision, risqué).
 3. Localiser le **% de filtre** et les **numéros de série** — cf. section "Equipment life" ci-dessus (nécessite de capturer un tout premier appairage).
 4. Décoder le tableau de 10 blocs du type `0x02` (historique horaire ?).
 5. Vérifier si offset `[34]` du type `0x01` encode bien la vitesse (un seul échantillon pour l'instant).

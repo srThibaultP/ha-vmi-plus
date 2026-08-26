@@ -14,6 +14,10 @@ CHAR_TELEMETRY_UUID = "0003caa2-0000-1000-8000-00805f9b0131"
 REG_SPEED = 0x18
 REG_BOOST = 0x19
 REG_BYPASS = 0x2F
+# Holiday mode (écran Special modes). OFF (0x00) confirmé par capture BLE
+# réelle ; ON (0x01) déduit par cohérence avec REG_BOOST/REG_BYPASS (même
+# convention 0/1 partout ailleurs dans ce protocole) — voir PROTOCOL.md.
+REG_HOLIDAY = 0x1A
 
 # L'app officielle ne nomme les 3 vitesses que "mode 1/2/3" (débit théorique en
 # m3/h configuré par l'installateur, propre à chaque centrale) — aucun nom

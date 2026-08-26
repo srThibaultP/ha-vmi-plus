@@ -49,6 +49,10 @@ développement → États) :
 - **Boost** (`switch`, suffixe `_boost`) — surventilation 30 min
 - **Bypass** (`switch`, suffixe `_bypass`) — contournement de l'échangeur (préchauffage gratuit
   de l'air, utile en hiver)
+- **Holiday** (`switch`, suffixe `_holiday`) — mode absence prolongée. ⚠️ Contrairement à l'app
+  officielle, qui demande un nombre de jours avant d'activer ce mode, cette entité ne fait
+  qu'activer/désactiver l'interrupteur — pas de durée programmable pour l'instant (voir
+  PROTOCOL.md, valeur ON déduite par cohérence avec Boost/Bypass, pas observée directement).
 - **Connexion Bluetooth** (`switch`, suffixe `_connexion_bluetooth`) — active/désactive la
   connexion BLE (utile pour libérer la centrale au profit de l'app officielle, une seule
   connexion GATT possible à la fois)
