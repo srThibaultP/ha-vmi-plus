@@ -95,13 +95,16 @@ class VmiPlusDevice:
             client = await self._ensure_connected()
             await client.write_gatt_char(CHAR_CONTROL_UUID, frame, response=True)
 
+    def _notify_listeners(self) -> None:
+        for callback in list(self._update_callbacks):
+            callback()
+
     def _handle_notification(self, _char, data: bytearray) -> None:
         parsed = parse_notification(bytes(data))
         if parsed is None:
             return
         self.telemetry[parsed["type"]] = parsed
-        for callback in list(self._update_callbacks):
-            callback()
+        self._notify_listeners()
 
     async def _poll_once(self) -> None:
         """Déclenche les trois notifications de télémétrie (voir PROTOCOL.md)."""
@@ -130,6 +133,10 @@ class VmiPlusDevice:
                         self.address,
                     )
                     self._was_available = False
+            # Notifie même sans nouvelle télémétrie (donc même en cas d'échec) :
+            # les entités write-only (select/switch) n'ont pas d'autre déclencheur
+            # pour rafraîchir leur `available`, qui dépend de l'état de connexion.
+            self._notify_listeners()
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
 
     def start_polling(self) -> None:
