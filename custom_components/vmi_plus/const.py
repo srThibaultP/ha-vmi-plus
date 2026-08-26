@@ -15,7 +15,11 @@ REG_SPEED = 0x18
 REG_BOOST = 0x19
 REG_BYPASS = 0x2F
 
-SPEED_OPTIONS = {"Vitesse 1": 0x00, "Vitesse 2": 0x01, "Vitesse 3": 0x02}
+# L'app officielle ne nomme les 3 vitesses que "mode 1/2/3" (débit théorique en
+# m3/h configuré par l'installateur, propre à chaque centrale) — aucun nom
+# universel côté Ventilairsec. On utilise Faible/Moyenne/Forte, plus parlant
+# dans Home Assistant, tout en évitant "Boost" (déjà pris par switch.*_boost).
+SPEED_OPTIONS = {"Faible": 0x00, "Moyenne": 0x01, "Forte": 0x02}
 
 # Registres de lecture : l'écriture ne fait que déclencher une notification de
 # télémétrie (types 0x01/0x02/0x03, voir protocol.py et PROTOCOL.md), elle ne
