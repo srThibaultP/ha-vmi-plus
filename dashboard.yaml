@@ -1,0 +1,107 @@
+# Dashboard Lovelace qui reprend la mise en page de l'app VMI+ officielle
+# (vitesse / boost / bypass / sondes) avec les entités de l'intégration vmi_plus.
+#
+# Installation : Paramètres → Tableaux de bord → Ajouter un tableau de bord →
+# "Nouveau tableau de bord vide", puis menu (⋮) → Modifier en YAML, et coller
+# le contenu ci-dessous (sans la ligne "views:" en double si l'éditeur en a
+# déjà une).
+#
+# Toutes les entités référencées existent déjà dans l'intégration vmi_plus —
+# aucune carte custom (HACS frontend) requise, uniquement des cartes intégrées
+# à Home Assistant (tile, gauge, grid).
+
+title: VMI+
+views:
+  - title: Urban
+    path: vmi-plus
+    icon: mdi:fan
+    cards:
+      - type: markdown
+        content: "## 🌀 Ventilation"
+
+      - type: tile
+        entity: select.vitesse
+        name: Vitesse
+        icon: mdi:fan
+        features_position: bottom
+        features:
+          - type: select-options
+
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: tile
+            entity: switch.boost
+            name: Boost 30 min
+            icon: mdi:fan-plus
+            vertical: true
+          - type: tile
+            entity: switch.bypass
+            name: Bypass (air neuf direct)
+            icon: mdi:heat-wave
+            vertical: true
+
+      - type: tile
+        entity: binary_sensor.mode_nuit
+        name: Mode nuit (sur-ventilation gratuite)
+        icon: mdi:weather-night
+        vertical: false
+
+      - type: markdown
+        content: "## 💧 Sondes"
+
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: gauge
+            entity: sensor.humidite_sonde_interne
+            name: Humidité — sonde interne
+            min: 0
+            max: 100
+            needle: true
+            severity:
+              green: 0
+              yellow: 60
+              red: 80
+          - type: gauge
+            entity: sensor.humidite_piece
+            name: Humidité — pièce (salle de bain)
+            min: 0
+            max: 100
+            needle: true
+            severity:
+              green: 0
+              yellow: 60
+              red: 80
+
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: tile
+            entity: sensor.temperature_sonde_interne
+            name: Température — sonde interne
+            icon: mdi:thermometer
+          - type: tile
+            entity: sensor.temperature_piece
+            name: Température — pièce
+            icon: mdi:thermometer
+
+      - type: markdown
+        content: "## ⚙️ Connexion"
+
+      - type: tile
+        entity: switch.connexion_bluetooth
+        name: Connexion Bluetooth
+        icon: mdi:bluetooth
+
+      - type: markdown
+        content: >
+          ℹ️ Vitesse/Boost/Bypass reflètent la dernière commande envoyée
+          depuis Home Assistant (pas une lecture live — voir README).
+          Mode nuit, lui, est une vraie lecture de l'appareil mais reste
+          modifiable uniquement depuis l'app officielle pour l'instant.
+          Filtre, n° de série et historique ne sont pas (encore) disponibles
+          en Bluetooth — voir PROTOCOL.md.

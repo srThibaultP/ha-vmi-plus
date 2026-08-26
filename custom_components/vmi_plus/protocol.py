@@ -35,6 +35,15 @@ def parse_notification(data: bytes) -> dict | None:
 
     frame_type = data[2]
 
+    if frame_type == 0x01 and len(data) >= 34:
+        # Statut général (vitesse/boost/bypass/modes spéciaux), déclenché par
+        # l'écriture du registre 0x03 (ou 0x0b). Seul le drapeau "mode nuit"
+        # (offset 33, logique inversée : 0x00=activé) est vérifié à ce stade
+        # sur plusieurs échantillons réels ; le reste de la trame (vitesse
+        # probable en offset 34, boost/bypass non localisés avec certitude)
+        # reste à confirmer, voir PROTOCOL.md.
+        return {"type": "status", "night_boost": data[33] == 0x00}
+
     if frame_type == 0x03 and len(data) >= 9:
         # Sonde interne "Probe N°1" (ex. sortie résistance), déclenchée par
         # l'écriture du registre 0x07.

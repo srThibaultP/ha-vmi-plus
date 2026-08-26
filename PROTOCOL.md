@@ -95,11 +95,21 @@ Exemples vérifiés (capturés réellement sur l'appareil) :
 
 L'appareil pousse des notifications sur la caractéristique télémétrie (handle `0x000e` dans nos captures), toutes préfixées `A5 B6`, avec un octet de **type** en position `[2]` qui indique le format du reste de la trame :
 
-### Type `0x01` — statut général (déclenché par écriture registre `0x03`)
+### Type `0x01` — statut général (déclenché par écriture registre `0x03` **ou `0x0b`**)
 
-Contient l'état vitesse/boost/bypass (voir table des registres ci-dessus — mêmes offsets `[34]`/`[44]`/`[53]` que les valeurs écrites en `0x18`/`0x19`/`0x2f`) ainsi que les RPM moteur (`uint16` little-endian, offset `[47:49]` dans nos captures — ex. `0x0168`=360 RPM en vitesse 1, `0x01c2`=450 en vitesse 2, `0x0226`=550 en vitesse 3, valeurs approximatives, à revalider).
+Trame la plus riche (longueur `0x37`=55 octets de payload, cf. structure générale ci-dessus) : contient l'état vitesse/boost/bypass ainsi que les 4 modes spéciaux (Holiday/Boost-30min/Night boost/Fixed air flow, écran "Special modes" de l'app). Le registre `0x0b` (déclenché en ouvrant l'écran Special modes) renvoie **exactement la même trame** que `0x03` — probablement un alias/sur-ensemble du statut général plutôt qu'un registre dédié.
 
-Attention : les offsets exacts de cette trame ont légèrement varié entre deux captures à des moments différents (probablement un champ de longueur variable en tête de trame) — se fier plutôt aux types `0x02`/`0x03` ci-dessous, plus stables et simples.
+Un seul champ est vérifié avec certitude à ce stade, sur 5 échantillons réels (`night_boost` dans `protocol.py`) :
+
+| Offset | Champ | Valeurs observées |
+|---|---|---|
+| `[33]` | Mode nuit (Night ventilation boost) actif | `0x00`=activé, `0x01`=désactivé (logique inversée) |
+
+Point non résolu (important) : en capturant deux bascules successives du toggle "Night ventilation boost mode" dans l'app (OFF puis ON), la **seule** trame envoyée vers l'appareil dans les deux cas était `a5b61006050b0000000018` — identique octet pour octet, alors que l'état réel a bien changé (vérifié par re-lecture après navigation complète hors de l'écran). Autrement dit, écrire le registre `0x0b` (valeur toujours `0x00`) semble **faire basculer (toggle)** l'état plutôt que d'imposer une valeur explicite comme le font `0x18`/`0x19`/`0x2f`. Non confirmé à 100% (2 échantillons seulement) — c'est pourquoi ce champ est exposé côté Home Assistant en lecture seule (`binary_sensor.mode_nuit`) et pas en `switch` pilotable : il faudrait un 3ᵉ test pour vérifier que réécrire deux fois de suite fait bien A→B→A avant d'implémenter une commande fiable.
+
+Offset `[34]` = `0x02` corrèle avec la vitesse active (3) dans nos échantillons, mais un seul point de mesure — à revalider en changeant de vitesse pendant une capture avant de l'exposer.
+
+Byte de fin (offset `[59]` dans nos échantillons) : compteur/checksum roulant qui change à chaque notification (`0xf5`, `0xe6`, `0xe7`...) sans lien apparent avec l'état — ignoré.
 
 ### Type `0x03` — sonde interne "Probe N°1" (déclenché par écriture registre `0x07`)
 
@@ -127,10 +137,24 @@ Numéro de série vu à l'écran : `04249B00` (pas encore localisé dans la tram
 
 Vus une fois chacun à la connexion initiale, contenu non décodé (probablement des accusés de réception ou des méta-données de session).
 
+## Écran "Equipment life" / "General info" (filtre, n° de série, versions...)
+
+L'app affiche un écran très riche (Maintenance → Available info → Equipment life) avec : jours restants de filtre, jours de fonctionnement, n° de série, saison, débit théorique, volume à ventiler, versions logicielles/matérielles. **Ces données ne sont PAS réémises en Bluetooth pendant une session normale** : capturées à 3 reprises (connexion initiale, polling en cours, navigation directe vers cet écran), aucune n'a fait apparaître de trame contenant ces valeurs (recherche ciblée de la chaîne "MUV2310129" en hexadécimal — infructueuse à chaque fois). Hypothèse la plus probable : l'app les lit une fois au tout premier appairage (avant nos captures) et les met en cache localement (SQLite/SharedPreferences), plutôt que de les relire à chaque connexion. Pour les capturer, il faudrait vider les données de l'app (ou la réinstaller) et recapturer *exactement* la toute première connexion — pas tenté ici (destructif pour l'app installée, risque de perdre la configuration).
+
+## Écran "Diagnostic" (autotest)
+
+Maintenance → Available info → Diagnostic affiche 4 autotests (IAQ Sensor, Motor, Pre-heating, Probes), tous ✓ verts sur notre appareil. Registre/notification déclencheur non identifié — écran non instrumenté (pas de test en échec disponible pour observer le format d'une erreur de toute façon).
+
+## "Vision'R"
+
+Chaîne trouvée dans le binaire de l'app, dont le rôle n'était pas clair au départ. Confirmé par recherche externe : **"Vision'R" est le nom commercial du système de gestion/pilotage** que Ventilairsec utilise pour ses gammes **Urban** et **Cube** (cf. "Gestion Urban et Cube Vision'R avec boîtier" sur la boutique officielle) — ce n'est pas un modèle d'appareil distinct. La centrale "Urban" de l'utilisateur *est* un système Vision'R : aucune intégration ni registre séparé n'est donc nécessaire, `vmi_plus` la couvre déjà.
+
 ## Ce qui reste à faire
 
-1. Localiser le **% de filtre** et les **numéros de série** dans les trames (probablement dans les zones encore non décodées des types `0x01`/`0x02`/`0x03`, ou dans un type de trame pas encore observé).
-2. Décoder le tableau de 10 blocs du type `0x02` (historique horaire ?).
-3. Revalider les offsets RPM du type `0x01` (l'offset a semblé bouger d'une capture à l'autre — la longueur d'un champ en tête de trame varie peut-être selon un compteur ou la longueur d'un nom).
-4. **Tester la famille EXTRACTOR** si l'utilisateur possède aussi ce type d'appareil (UUID différents, non capturés ici).
-5. Vérifier si les handles ATT (`0x0013`/`0x000e`) sont stables entre reconnexions/redémarrages de la centrale, ou s'il vaut mieux toujours résoudre par UUID (recommandé, déjà fait dans le code fourni).
+1. Confirmer la sémantique d'écriture du registre `0x0b` (bascule vs. valeur explicite — voir type `0x01` ci-dessus) avant d'exposer "Mode nuit" en écriture.
+2. Localiser les registres des 3 autres modes spéciaux : Holiday mode (activé une fois avec succès mais trame non capturée, le buffer BTSnoop ayant tourné avant l'extraction), Boost mode 30 min, Fixed air flow rate mode (aucun des deux testés).
+3. Localiser le **% de filtre** et les **numéros de série** — cf. section "Equipment life" ci-dessus (nécessite de capturer un tout premier appairage).
+4. Décoder le tableau de 10 blocs du type `0x02` (historique horaire ?).
+5. Vérifier si offset `[34]` du type `0x01` encode bien la vitesse (un seul échantillon pour l'instant).
+6. **Tester la famille EXTRACTOR** si l'utilisateur possède aussi ce type d'appareil (UUID différents, non capturés ici).
+7. Vérifier si les handles ATT (`0x0013`/`0x000e`) sont stables entre reconnexions/redémarrages de la centrale, ou s'il vaut mieux toujours résoudre par UUID (recommandé, déjà fait dans le code fourni).

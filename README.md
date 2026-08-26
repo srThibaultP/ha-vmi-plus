@@ -48,6 +48,11 @@ Entités créées :
   (ex. sortie résistance de préchauffage)
 - `sensor.temperature_piece` / `sensor.humidite_piece` — sonde télécommande de la pièce
   ventilée (ex. salle de bain)
+- `binary_sensor.mode_nuit` — statut réel (lu sur l'appareil, pas juste optimiste) du mode
+  "Night ventilation boost" (sur-ventilation nocturne gratuite été/préchauffage passif hiver).
+  **Lecture seule** : la commande d'écriture pour ce mode n'est pas encore fiabilisée, voir
+  PROTOCOL.md — pour le changer, utiliser l'app officielle (Configuration → Special modes),
+  cette entité se met à jour au poll suivant (10s).
 
 Les sensors sont alimentés par un polling automatique toutes les 10s (démarré dès qu'une
 entité sensor est chargée) — pas besoin de configuration supplémentaire.
@@ -63,7 +68,13 @@ obsolètes jusqu'à leur prochaine commande depuis HA. Le statut vitesse/boost/b
 réalité aussi diffusé par la centrale (notification type `0x01`, voir PROTOCOL.md) mais pas
 encore branché sur ces entités — piste d'amélioration future.
 
-## 3. Prochaines étapes possibles
+## 3. Tableau de bord (optionnel)
+
+[`dashboard.yaml`](dashboard.yaml) reprend la mise en page de l'app officielle (vitesse,
+boost, bypass, sondes) avec les entités ci-dessus — uniquement des cartes intégrées à Home
+Assistant, rien à installer en plus. Voir l'en-tête du fichier pour l'installation.
+
+## 4. Prochaines étapes possibles
 
 Voir la section "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md) — principalement le
 décodage de la télémétrie pour avoir des sensors (humidité, filtre, RPM) plutôt que juste du
