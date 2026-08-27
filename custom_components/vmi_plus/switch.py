@@ -1,4 +1,4 @@
-"""Switches Boost (0x19) et Bypass (0x2f) de la centrale VMI+."""
+"""Switches Boost (0x19), Bypass (0x2f), Holiday (0x1a) et Mode nuit (0x0b) de la centrale VMI+."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +9,7 @@ from homeassistant.const import CONF_ADDRESS, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import REG_BOOST, REG_BYPASS, REG_HOLIDAY
+from .const import REG_BOOST, REG_BYPASS, REG_HOLIDAY, REG_NIGHT_BOOST_TOGGLE
 from .device import VmiPlusDevice
 from .entity import VmiPlusEntity
 
@@ -22,9 +22,10 @@ async def async_setup_entry(
     device: VmiPlusDevice = entry.runtime_data
     async_add_entities(
         [
-            VmiPlusSwitch(device, entry, "boost", "Boost", REG_BOOST),
-            VmiPlusSwitch(device, entry, "bypass", "Bypass", REG_BYPASS),
-            VmiPlusSwitch(device, entry, "holiday", "Holiday", REG_HOLIDAY),
+            VmiPlusSwitch(device, entry, "boost", "Boost", REG_BOOST, "boost"),
+            VmiPlusSwitch(device, entry, "bypass", "Bypass", REG_BYPASS, "bypass"),
+            VmiPlusSwitch(device, entry, "holiday", "Holiday", REG_HOLIDAY, "holiday"),
+            VmiPlusNightBoostSwitch(device, entry),
             VmiPlusConnectionSwitch(device, entry),
         ]
     )
@@ -32,20 +33,35 @@ async def async_setup_entry(
 
 class VmiPlusSwitch(VmiPlusEntity, SwitchEntity):
     def __init__(
-        self, device: VmiPlusDevice, entry: ConfigEntry, key: str, name: str, register: int
+        self,
+        device: VmiPlusDevice,
+        entry: ConfigEntry,
+        key: str,
+        name: str,
+        register: int,
+        telemetry_field: str,
     ) -> None:
         super().__init__(device, entry)
         self._register = register
+        self._telemetry_field = telemetry_field
         self._attr_name = name
         self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{key}"
         self._attr_is_on = False
 
     async def async_added_to_hass(self) -> None:
-        # Entité write-only : sans ceci, `available` ne serait réévalué et
-        # poussé à HA qu'à la prochaine action utilisateur, et resterait
-        # bloqué sur son état au démarrage si la connexion BLE fluctue
-        # entre-temps (voir le callback régulier ajouté dans device.py).
-        self.async_on_remove(self._device.add_update_listener(self.async_write_ha_state))
+        self.async_on_remove(self._device.add_update_listener(self._on_update))
+
+    def _on_update(self) -> None:
+        # État confirmé par lecture réelle (trame statut, voir
+        # protocol.py/PROTOCOL.md) : remplace toute valeur optimiste dès que
+        # la centrale la republie (poll périodique ou après notre propre
+        # écriture), y compris si l'état a changé depuis l'app officielle ou
+        # la télécommande physique. Sert aussi de callback de disponibilité
+        # (voir device.py) pour une entité par ailleurs write-only.
+        data = self._device.telemetry.get("status")
+        if data is not None and self._telemetry_field in data:
+            self._attr_is_on = data[self._telemetry_field]
+        self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._device.write_register(self._register, 0x01)
@@ -56,6 +72,49 @@ class VmiPlusSwitch(VmiPlusEntity, SwitchEntity):
         await self._device.write_register(self._register, 0x00)
         self._attr_is_on = False
         self.async_write_ha_state()
+
+
+class VmiPlusNightBoostSwitch(VmiPlusEntity, SwitchEntity):
+    """Mode nuit (Night ventilation boost, écran Special modes).
+
+    Contrairement aux autres switches, le registre 0x0b ne prend pas de
+    valeur explicite : chaque écriture bascule l'état courant plutôt que de
+    l'imposer (voir REG_NIGHT_BOOST_TOGGLE et PROTOCOL.md). Cette entité ne
+    déclenche donc une écriture que si le dernier état connu (télémétrie,
+    rafraîchie au plus toutes les 10s) diffère de l'état demandé — dans de
+    rares cas, un état périmé pourrait faire basculer dans le mauvais sens si
+    l'état a changé entretemps ailleurs (app officielle, télécommande
+    physique) ; se corrige de lui-même au poll suivant.
+    """
+
+    _attr_name = "Mode nuit"
+    _attr_icon = "mdi:weather-night"
+
+    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
+        super().__init__(device, entry)
+        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_night_boost"
+        self._attr_is_on = False
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(self._device.add_update_listener(self._on_update))
+
+    def _on_update(self) -> None:
+        data = self._device.telemetry.get("status")
+        if data is not None and "night_boost" in data:
+            self._attr_is_on = data["night_boost"]
+        self.async_write_ha_state()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        if not self._attr_is_on:
+            await self._device.write_register(REG_NIGHT_BOOST_TOGGLE, 0x00)
+            self._attr_is_on = True
+            self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        if self._attr_is_on:
+            await self._device.write_register(REG_NIGHT_BOOST_TOGGLE, 0x00)
+            self._attr_is_on = False
+            self.async_write_ha_state()
 
 
 class VmiPlusConnectionSwitch(VmiPlusEntity, SwitchEntity):

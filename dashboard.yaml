@@ -48,12 +48,16 @@ views:
             name: Bypass (air neuf direct)
             icon: mdi:heat-wave
             vertical: true
-
-      - type: tile
-        entity: binary_sensor.urban_mode_nuit
-        name: Mode nuit (sur-ventilation gratuite)
-        icon: mdi:weather-night
-        vertical: false
+          - type: tile
+            entity: switch.urban_mode_nuit
+            name: Mode nuit (sur-ventilation gratuite)
+            icon: mdi:weather-night
+            vertical: true
+          - type: tile
+            entity: switch.urban_holiday
+            name: Holiday (absence prolongée)
+            icon: mdi:bag-suitcase
+            vertical: true
 
       - type: markdown
         content: "## 💧 Sondes"
@@ -106,9 +110,8 @@ views:
 
       - type: markdown
         content: >
-          ℹ️ Vitesse/Boost/Bypass reflètent la dernière commande envoyée
-          depuis Home Assistant (pas une lecture live — voir README).
-          Mode nuit, lui, est une vraie lecture de l'appareil mais reste
-          modifiable uniquement depuis l'app officielle pour l'instant.
+          ℹ️ Vitesse/Boost/Bypass/Holiday/Mode nuit reflètent une vraie
+          lecture de l'appareil (rafraîchie au plus toutes les 10s), pas
+          seulement la dernière commande envoyée — voir README.
           Filtre, n° de série et historique ne sont pas (encore) disponibles
           en Bluetooth — voir PROTOCOL.md.

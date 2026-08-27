@@ -18,6 +18,8 @@ from .entity import VmiPlusEntity
 
 PARALLEL_UPDATES = 1
 
+_SPEED_BY_VALUE = {value: option for option, value in SPEED_OPTIONS.items()}
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -37,11 +39,19 @@ class VmiPlusSpeedSelect(VmiPlusEntity, SelectEntity):
         self._attr_current_option: str | None = None
 
     async def async_added_to_hass(self) -> None:
-        # Entité write-only : sans ceci, `available` ne serait réévalué et
-        # poussé à HA qu'à la prochaine action utilisateur, et resterait
-        # bloqué sur son état au démarrage si la connexion BLE fluctue
-        # entre-temps (voir le callback régulier ajouté dans device.py).
-        self.async_on_remove(self._device.add_update_listener(self.async_write_ha_state))
+        self.async_on_remove(self._device.add_update_listener(self._on_update))
+
+    def _on_update(self) -> None:
+        # Vitesse confirmée par lecture réelle (offset 34 de la trame statut,
+        # voir protocol.py/PROTOCOL.md) : remplace toute valeur optimiste dès
+        # que la centrale la republie (poll périodique ou après notre propre
+        # écriture), y compris si la vitesse a changé depuis l'app officielle
+        # ou la télécommande physique. Sert aussi de callback de disponibilité
+        # (voir device.py) pour une entité par ailleurs write-only.
+        data = self._device.telemetry.get("status")
+        if data is not None and "speed" in data:
+            self._attr_current_option = _SPEED_BY_VALUE.get(data["speed"])
+        self.async_write_ha_state()
 
     async def async_select_option(self, option: str) -> None:
         await self._device.write_register(REG_SPEED, SPEED_OPTIONS[option])

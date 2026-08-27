@@ -60,18 +60,39 @@ class ParseNotificationTests(unittest.TestCase):
 
     def test_status_frame_night_boost(self) -> None:
         # Offset [33] = 0x00 -> mode nuit activé (logique inversée, voir PROTOCOL.md)
-        frame_on = bytearray([0xA5, 0xB6, 0x01] + [0] * 40)
+        frame_on = bytearray([0xA5, 0xB6, 0x01] + [0] * 60)
         frame_on[33] = 0x00
         parsed = protocol.parse_notification(bytes(frame_on))
-        self.assertEqual(parsed, {"type": "status", "night_boost": True})
+        self.assertEqual(parsed["night_boost"], True)
 
-        frame_off = bytearray([0xA5, 0xB6, 0x01] + [0] * 40)
+        frame_off = bytearray([0xA5, 0xB6, 0x01] + [0] * 60)
         frame_off[33] = 0x01
         parsed = protocol.parse_notification(bytes(frame_off))
-        self.assertEqual(parsed, {"type": "status", "night_boost": False})
+        self.assertEqual(parsed["night_boost"], False)
+
+    def test_status_frame_speed_boost_bypass_holiday(self) -> None:
+        # Offsets confirmés par capture BLE réelle (changement d'un seul
+        # réglage à la fois, diff avant/après), voir PROTOCOL.md.
+        frame = bytearray([0xA5, 0xB6, 0x01] + [0] * 60)
+        frame[34] = 0x02  # vitesse "Forte"
+        frame[43] = 0x01  # holiday ON
+        frame[44] = 0x01  # boost ON
+        frame[53] = 0x01  # bypass ON
+        parsed = protocol.parse_notification(bytes(frame))
+        self.assertEqual(
+            parsed,
+            {
+                "type": "status",
+                "night_boost": True,  # offset [33] laissé à 0x00 par défaut ici
+                "speed": 0x02,
+                "holiday": True,
+                "boost": True,
+                "bypass": True,
+            },
+        )
 
     def test_status_frame_too_short_returns_none(self) -> None:
-        frame = bytes([0xA5, 0xB6, 0x01] + [0] * 30)  # < 34 octets
+        frame = bytes([0xA5, 0xB6, 0x01] + [0] * 40)  # < 54 octets
         self.assertIsNone(protocol.parse_notification(frame))
 
     def test_probe_frame_temperature_humidity(self) -> None:

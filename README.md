@@ -56,10 +56,11 @@ développement → États) :
 - **Boost** (`switch`, suffixe `_boost`) — surventilation 30 min
 - **Bypass** (`switch`, suffixe `_bypass`) — contournement de l'échangeur (préchauffage gratuit
   de l'air, utile en hiver)
-- **Holiday** (`switch`, suffixe `_holiday`) — mode absence prolongée. ⚠️ Contrairement à l'app
-  officielle, qui demande un nombre de jours avant d'activer ce mode, cette entité ne fait
-  qu'activer/désactiver l'interrupteur — pas de durée programmable pour l'instant (voir
-  PROTOCOL.md, valeur ON déduite par cohérence avec Boost/Bypass, pas observée directement).
+- **Holiday** (`switch`, suffixe `_holiday`) — mode absence prolongée. ⚠️ L'app officielle
+  demande aussi un nombre de jours, mais cette valeur n'est **jamais transmise à la centrale**
+  en Bluetooth (vérifié par capture réelle : une seule trame d'écriture, juste l'interrupteur) —
+  purement informatif côté app, cette entité `switch` couvre donc déjà 100% de ce que fait
+  réellement le Bluetooth pour ce mode.
 - **Connexion Bluetooth** (`switch`, suffixe `_connexion_bluetooth`) — active/désactive la
   connexion BLE (utile pour libérer la centrale au profit de l'app officielle, une seule
   connexion GATT possible à la fois)
@@ -67,25 +68,24 @@ développement → États) :
   `_humidite_sonde_interne`) — sonde interne (ex. sortie résistance de préchauffage)
 - **Température/Humidité pièce** (`sensor`, suffixes `_temperature_piece` / `_humidite_piece`)
   — sonde télécommande de la pièce ventilée (ex. salle de bain)
-- **Mode nuit** (`binary_sensor`, suffixe `_mode_nuit`) — statut réel (lu sur l'appareil, pas
-  juste optimiste) du mode "Night ventilation boost" (sur-ventilation nocturne gratuite été/
-  préchauffage passif hiver). **Lecture seule** : la commande d'écriture pour ce mode n'est pas
-  encore fiabilisée, voir PROTOCOL.md — pour le changer, utiliser l'app officielle
-  (Configuration → Special modes), cette entité se met à jour au poll suivant (10s).
+- **Mode nuit** (`switch`, suffixe `_mode_nuit`) — "Night ventilation boost" (sur-ventilation
+  nocturne gratuite été/préchauffage passif hiver). ⚠️ Registre à bascule (pas de valeur
+  explicite ON/OFF comme les autres switches, voir PROTOCOL.md) : cette entité ne bascule que
+  si l'état actuellement connu diffère de l'état demandé, pour éviter d'inverser par erreur —
+  dans de rares cas un état légèrement périmé (poll 10s) pourrait faire basculer dans le
+  mauvais sens si l'état a changé entretemps depuis l'app officielle ou la télécommande
+  physique, mais se corrige de lui-même au poll suivant.
 
 Les sensors sont alimentés par un polling automatique toutes les 10s (démarré dès qu'une
 entité sensor est chargée) — pas besoin de configuration supplémentaire.
 
-**Testé et fonctionnel en conditions réelles** (vitesse, boost, lecture des sondes) sur une
-vraie instance HA.
+**Testé et fonctionnel en conditions réelles** (vitesse, boost, bypass, holiday, mode nuit,
+lecture des sondes) sur une vraie instance HA.
 
-⚠️ **Limitation** : Vitesse, Boost et Bypass restent optimistes —
-c'est la mémoire de la dernière commande *envoyée par HA*, pas une lecture réelle de l'appareil
-(contrairement aux sensors température/humidité, qui eux sont de vraies lectures). Si tu changes
-une vitesse via l'app officielle ou la télécommande physique, ces trois entités resteront
-obsolètes jusqu'à leur prochaine commande depuis HA. Le statut vitesse/boost/bypass est en
-réalité aussi diffusé par la centrale (notification type `0x01`, voir PROTOCOL.md) mais pas
-encore branché sur ces entités — piste d'amélioration future.
+Vitesse, Boost, Bypass, Holiday et Mode nuit reflètent tous une **vraie lecture de l'appareil**
+(notification type `0x01`, rafraîchie au plus toutes les 10s par le polling périodique), pas
+juste la dernière commande envoyée par HA — si tu changes un réglage via l'app officielle ou la
+télécommande physique, ces entités se corrigent au poll suivant.
 
 ## 3. Tableau de bord (optionnel)
 
