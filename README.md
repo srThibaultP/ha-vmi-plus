@@ -10,6 +10,13 @@ d'une capture BLE réelle. Détails complets du protocole : [PROTOCOL.md](PROTOC
 des deux sondes (interne + télécommande/pièce). **Pas encore fait** : % de filtre, numéros de
 série, historique — voir "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md).
 
+## 0. Tests unitaires du protocole
+
+`tests/test_protocol.py` vérifie `protocol.py` (checksum, construction/décodage de
+trames) contre les trames réellement capturées documentées dans PROTOCOL.md —
+aucune dépendance (ni `homeassistant`, ni `pytest`) : `python3 -m unittest discover
+-s tests`.
+
 ## 1. Tester d'abord en ligne de commande
 
 Avant d'installer l'intégration complète, valide le protocole directement avec le script
