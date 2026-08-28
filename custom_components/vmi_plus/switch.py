@@ -133,12 +133,10 @@ class VmiPlusConnectionSwitch(VmiPlusEntity, SwitchEntity):
         super().__init__(device, entry)
         self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_connection_enabled"
 
-    @property
-    def available(self) -> bool:
-        # Ce switch doit rester actionnable même quand la centrale est
-        # injoignable — c'est justement lui qui permet de forcer une nouvelle
-        # tentative de connexion, contrairement aux autres entités.
-        return True
+    # `available` hérité de VmiPlusEntity (toujours True) convient déjà : ce
+    # switch doit rester actionnable même quand la centrale est injoignable,
+    # c'est justement lui qui permet de forcer une nouvelle tentative de
+    # connexion.
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._device.set_enabled(True)

@@ -141,8 +141,8 @@ class VmiPlusDevice:
                     )
                     self._was_available = False
             # Notifie même sans nouvelle télémétrie (donc même en cas d'échec) :
-            # les entités write-only (select/switch) n'ont pas d'autre déclencheur
-            # pour rafraîchir leur `available`, qui dépend de l'état de connexion.
+            # inoffensif (ré-écrit le même état), mais laisse un point d'ancrage
+            # si une entité a un jour besoin de réagir à un cycle de poll raté.
             self._notify_listeners()
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
 

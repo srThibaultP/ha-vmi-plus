@@ -87,6 +87,11 @@ Vitesse, Boost, Bypass, Holiday et Mode nuit reflètent tous une **vraie lecture
 juste la dernière commande envoyée par HA — si tu changes un réglage via l'app officielle ou la
 télécommande physique, ces entités se corrigent au poll suivant.
 
+Toutes les entités restent **toujours "disponibles"**, même pendant une coupure Bluetooth
+(ex. l'app officielle reprend temporairement la main) : plutôt que de passer en
+`unavailable`/`unknown` et perdre leur dernière valeur connue, elles la gardent figée jusqu'à
+la prochaine lecture réussie.
+
 ## 3. Tableau de bord (optionnel)
 
 [`dashboard.yaml`](dashboard.yaml) reprend la mise en page de l'app officielle (vitesse,
