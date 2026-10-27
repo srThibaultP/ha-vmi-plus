@@ -182,6 +182,25 @@ New capture (phone HCI snoop + direct reads from a Raspberry Pi with bleak), rea
   `1a 0a 1b 0f 32 01` = 2026-10-27 15:50:01 (`[yy][mm][dd][hh][mm][ss]`), sent at that exact time.
 - The first write of a session is `a5b6100005030000000016` (class `10 00` instead of `10 06`),
   then the usual `0x2c`, `0x03`, `0x06`, `0x07` polling.
+- **Register `0x17` = summer supply-air limit (°C)**, confirmed by changing it in the app
+  (24 → 26 → 24 °C, frames `a5b6100605170000001a1e` / `a5b610060517000000181c`). Read back at status
+  offset `[38]`. Exposed as `number.*_limite_temperature_ete` (22–35 °C, like the app).
+- Opening every Configuration / Maintenance / Sensor management screen sends **no extra read**: the
+  app builds all of them from the status frame (`0x01`) and the probe frames. So everything the app
+  shows is in those frames.
+- The last byte of the status frame (`[60]`) is a checksum of the frame, not a rolling counter: it
+  changes only when the content changes (`c7` → `c5` when `[38]` went from 24 to 26).
+- Status frame candidates matching values shown by the app (not yet confirmed by a diff):
+
+  | Offset | Value | App value |
+  |---|---|---|
+  | `[5:9]` LE | `0x22310129` | Serial number `MUV2310129` (digits after the leading `2`) |
+  | `[6]` | `0x01` | Season "Intermediate" (?) |
+  | `[18]` | `0x32` = 50 | Theoretical air flow slider 50 % (90 m³/h) |
+  | `[22]` | `0xc8` = 200 | Volume to ventilate 200 m³ |
+  | `[28:32]` | `00 00 00 00` | Filter life 0 days / FILTER 0 % (filter interval set to 6 months) |
+  | `[35]` | `0x12` = 18 | Preheat target 18 °C (was `0x00` with the preheat button off in August, i.e. the HA "Bypass" switch, register `0x2f`, is really the app's preheat button) |
+  | `[47:49]` LE | `0x01c2` = 450 | Changes with the speed (360/450/550), unit unknown |
 - Maintenance → History does not read anything over BLE: it asks for an e-mail address and the
   history is sent by the vendor's cloud.
 

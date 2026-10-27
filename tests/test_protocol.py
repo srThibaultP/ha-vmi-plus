@@ -89,6 +89,7 @@ class ParseNotificationTests(unittest.TestCase):
                 "boost": True,
                 "bypass": True,
                 "operating_days": 0,
+                "summer_limit": 0,
             },
         )
 
@@ -104,6 +105,12 @@ class ParseNotificationTests(unittest.TestCase):
         self.assertEqual(parsed["speed"], 0x01)
         self.assertTrue(parsed["night_boost"])
         self.assertTrue(parsed["bypass"])
+        self.assertEqual(parsed["summer_limit"], 24)
+
+    def test_summer_limit_frames(self) -> None:
+        # Captured 2026-10-27: summer limit set to 26 °C, then back to 24 °C.
+        self.assertEqual(protocol.build_frame(0x17, 26).hex(), "a5b6100605170000001a1e")
+        self.assertEqual(protocol.build_frame(0x17, 24).hex(), "a5b610060517000000181c")
 
     def test_status_frame_too_short_returns_none(self) -> None:
         frame = bytes([0xA5, 0xB6, 0x01] + [0] * 40)  # < 54 octets

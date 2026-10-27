@@ -51,6 +51,8 @@ def parse_notification(data: bytes) -> dict | None:
             # Little-endian uint16, matches the app's "Equipment life ->
             # Operating days" (1084 = 0x043C on the 2026-10-27 capture).
             "operating_days": int.from_bytes(data[26:28], "little"),
+            # Summer supply-air limit in °C, written with register 0x17.
+            "summer_limit": data[38],
         }
 
     if frame_type == 0x03 and len(data) >= 9:

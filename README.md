@@ -70,6 +70,9 @@ développement → États) :
   — sonde télécommande de la pièce ventilée (ex. salle de bain)
 - **Jours de fonctionnement** (`sensor`, suffix `_jours_de_fonctionnement`, diagnostic) —
   operating days counter, same value as the app's "Equipment life" screen.
+- **Limite température été** (`number`, suffix `_limite_temperature_ete`, config) — the app's
+  "During the summer" setting: incoming air flow is limited when it is hotter than this outside
+  (22–35 °C).
 - **Mode nuit** (`switch`, suffixe `_mode_nuit`) — "Night ventilation boost" (sur-ventilation
   nocturne gratuite été/préchauffage passif hiver). ⚠️ Registre à bascule (pas de valeur
   explicite ON/OFF comme les autres switches, voir PROTOCOL.md) : cette entité ne bascule que

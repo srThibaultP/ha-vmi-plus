@@ -9,6 +9,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from .device import VmiPlusDevice
 
 PLATFORMS: list[Platform] = [
+    Platform.NUMBER,
     Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,

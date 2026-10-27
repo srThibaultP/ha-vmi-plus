@@ -24,6 +24,12 @@ REG_NIGHT_BOOST_TOGGLE = 0x0B
 # en BLE (vérifié : une seule trame d'écriture, juste le registre) — c'est une
 # donnée purement locale à l'app, sans effet sur la centrale — voir PROTOCOL.md.
 REG_HOLIDAY = 0x1A
+# Summer supply-air limit in °C ("Simplified configuration -> During the
+# summer"), value = temperature. Confirmed 2026-10-27 by changing it 24 -> 26 ->
+# 24 in the app (frames a5b6100605170000001a1e / ...18...): status offset 38.
+REG_SUMMER_LIMIT = 0x17
+SUMMER_LIMIT_MIN = 22  # range offered by the app's drop-down
+SUMMER_LIMIT_MAX = 35
 
 # L'app officielle ne nomme les 3 vitesses que "mode 1/2/3" (débit théorique en
 # m3/h configuré par l'installateur, propre à chaque centrale) — aucun nom
