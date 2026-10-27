@@ -6,8 +6,10 @@ Intégration non-officielle pour piloter en Bluetooth Low Energy une centrale de
 **VMI+ / VMCI (Ventilairsec)**, reverse-engineered à partir de l'app Android officielle et
 d'une capture BLE réelle. Détails complets du protocole : [PROTOCOL.md](PROTOCOL.md).
 
-**Vérifié contre du matériel réel** : vitesse (1/2/3), Boost, Bypass, et température/humidité
-des deux sondes (interne + télécommande/pièce). **Pas encore fait** : % de filtre (the days left are exposed), historique — voir "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md).
+**Feature parity with the official app**: everything the app shows or controls for a private
+customer is available in Home Assistant (table in section 2), checked against a real Urban unit.
+The full protocol, including the installer and after-sales functions that are deliberately not
+exposed, is in [PROTOCOL.md](PROTOCOL.md).
 
 ## 0. Tests unitaires du protocole
 
@@ -46,50 +48,53 @@ Toutes les entités sont regroupées sous un seul **appareil** (nommé d'après 
 détectée, ex. "Urban") — Paramètres → Appareils et services → Appareils → cet appareil →
 crayon ✏️ pour lui assigner une pièce.
 
-Entités créées (l'entity_id complet dépend du nom de ton appareil — ex. pour un appareil
-nommé "Urban" : `select.urban_vitesse`, `switch.urban_boost`... vérifiable dans Outils de
-développement → États) :
-- **Vitesse** (`select`, suffixe `_vitesse`) — vitesse 1/2/3 (entité `select` et non `fan` :
-  la centrale ventile en continu et ne peut pas être éteinte, alors que le domaine `fan` de HA
-  impose toujours une position "Off")
-- **Boost** (`switch`, suffixe `_boost`) — surventilation 30 min
-- **Préchauffage** (`switch`, suffixe `_bypass`; named "Bypass" before v0.4.0, register `0x2f` turned
-  out to be the app's preheat button) — contournement de l'échangeur (préchauffage gratuit
-  de l'air, utile en hiver)
-- **Holiday** (`switch`, suffixe `_holiday`) — mode absence prolongée. ⚠️ L'app officielle
-  demande aussi un nombre de jours, mais cette valeur n'est **jamais transmise à la centrale**
-  en Bluetooth (vérifié par capture réelle : une seule trame d'écriture, juste l'interrupteur) —
-  purement informatif côté app, cette entité `switch` couvre donc déjà 100% de ce que fait
-  réellement le Bluetooth pour ce mode.
-- **Connexion Bluetooth** (`switch`, suffixe `_connexion_bluetooth`) — active/désactive la
-  connexion BLE (utile pour libérer la centrale au profit de l'app officielle, une seule
-  connexion GATT possible à la fois)
-- **Température/Humidité sonde interne** (`sensor`, suffixes `_temperature_sonde_interne` /
-  `_humidite_sonde_interne`) — sonde interne (ex. sortie résistance de préchauffage)
-- **Température/Humidité pièce** (`sensor`, suffixes `_temperature_piece` / `_humidite_piece`)
-  — sonde télécommande de la pièce ventilée (ex. salle de bain)
-- **Jours de fonctionnement** (`sensor`, suffix `_jours_de_fonctionnement`, diagnostic) —
-  operating days counter, same value as the app's "Equipment life" screen.
-- **Débit théorique** (`sensor`, suffix `_debit_theorique`) — theoretical air flow of the current
-  speed in m³/h, as shown by the app (72/90/110 m³/h on our unit).
-- **Autonomie filtre** (`sensor`, suffix `_autonomie_filtre`) — remaining filter life in days, as
-  in the app's "Equipment life" screen.
-- **Saison** (`sensor`, suffix `_saison`) — season used by the unit (`ete` / `hiver` /
-  `intermediaire`).
-- **Version logicielle** (`sensor`, suffix `_version_logicielle`, diagnostic) — embedded software
-  version (e.g. `6.4.002`).
-- **Limite température été** (`number`, suffix `_limite_temperature_ete`, config) — the app's
-  "During the summer" setting: incoming air flow is limited when it is hotter than this outside
-  (22–35 °C).
-- **Température de préchauffage** (`number`, suffix `_temperature_de_prechauffage`, config) — the
-  app's "During the winter" preheat target (12–18 °C). Setting a value also turns preheating on.
-- **Mode nuit** (`switch`, suffixe `_mode_nuit`) — "Night ventilation boost" (sur-ventilation
-  nocturne gratuite été/préchauffage passif hiver). ⚠️ Registre à bascule (pas de valeur
-  explicite ON/OFF comme les autres switches, voir PROTOCOL.md) : cette entité ne bascule que
-  si l'état actuellement connu diffère de l'état demandé, pour éviter d'inverser par erreur —
-  dans de rares cas un état légèrement périmé (poll 10s) pourrait faire basculer dans le
-  mauvais sens si l'état a changé entretemps depuis l'app officielle ou la télécommande
-  physique, mais se corrige de lui-même au poll suivant.
+Entities (the full entity_id depends on the device name, e.g. `select.urban_vitesse` for a device
+named "Urban"; check Developer tools → States). Every app feature maps to one of them:
+
+| App screen | Entity | Type | Register / frame |
+|---|---|---|---|
+| Home: 3 speeds (also the "Theoretical air flow" slider) | Vitesse | `select` | `0x18`, status `[34]` |
+| Home: Boost 30 min | Boost | `switch` | `0x19`, status `[44]` |
+| Home: preheat button | Préchauffage (`_bypass`, named "Bypass" before v0.4.0) | `switch` | `0x2f`, status `[53]` |
+| Home: FILTER gauge / Equipment life: filter life | Autonomie filtre (days) | `sensor` | status `[28:30]` |
+| Home: bathroom remote control | Température / Humidité pièce | `sensor` | SensorsState `0x02` |
+| Special modes: holiday | Holiday | `switch` | `0x1a`, status `[43]` |
+| Special modes: night ventilation boost | Mode nuit | `switch` | `0x0b` (toggle), status `[33]` |
+| Special modes: fixed air flow (radon) | Débit fixe (radon) | `switch` | `0x1b`, status `[45]` |
+| Configuration: activating time slots | Plages horaires (+ weekly schedule as attributes) | `switch` | `0x1d`, status `[46]`, TimeSlotState `0x05` |
+| Configuration: time slots editor | `vmi_plus.set_day_schedule` | service | ConfigTimeSlot `0x19` |
+| Simplified configuration: theoretical air flow | Débit théorique (m³/h) | `sensor` | status `[47:49]` / 5 |
+| Simplified configuration: preheat target | Température de préchauffage | `number` | `0x1c`, status `[35]` |
+| Simplified configuration: summer limit | Limite température été | `number` | `0x17`, status `[38]` |
+| Equipment life: operating days | Jours de fonctionnement | `sensor` | status `[26:28]` |
+| Equipment life: season | Saison | `sensor` | status `[51]` |
+| Equipment life: housing, serial, versions | device info (model, serial number, firmware, hardware) + Version logicielle | device / `sensor` | status `[5:9]`, `[19]`, `[20]`, `[21]`, `[49]`, `[50]` |
+| Instantaneous measurements: internal probe | Température / Humidité sonde interne | `sensor` | ProbesState `0x03` |
+| Diagnostic | Autotest (problem) | `binary_sensor` | status `[10]`–`[14]` |
+| Sensor management | Capteurs associés (list as attributes) | `sensor` | SensorsState `0x02` |
+| Maintenance: filter change (6 / 12 months) | Filtre changé (6 mois) / (12 mois) | `button` | `0x05` = months. **Restarts the filter counter.** |
+| Find my unit | Localiser (LED) | `button` | `0x02` |
+| (not shown by the app) heat-exchanger bypass | Bypass échangeur (+ position, temperature) / Position bypass | `binary_sensor` / `sensor` | status `[25]`, ByPassState `0x18` |
+| — | Connexion Bluetooth | `switch` | frees the unit for the official app |
+
+Not exposed on purpose (installer / after-sales functions, documented in
+[PROTOCOL.md](PROTOCOL.md)): installer configuration frames (volume, surface, filter lifespan,
+bypass and GTC/Modbus settings, sensor pairing), firmware update, history CSV export (the app
+e-mails it through the vendor's cloud; Home Assistant keeps its own history), factory reset and
+after-sales work codes.
+
+Example of a time slot programme (Monday: Moyenne from 7 h, Faible from 22 h):
+
+```yaml
+action: vmi_plus.set_day_schedule
+target:
+  entity_id: switch.urban_plages_horaires
+data:
+  day: 1
+  slots:
+    - {start: 7, speed: Moyenne}
+    - {start: 22, speed: Faible}
+```
 
 Les sensors sont alimentés par un polling automatique toutes les 10s (démarré dès qu'une
 entité sensor est chargée) — pas besoin de configuration supplémentaire.
@@ -122,8 +127,7 @@ Intégrations → VMI+ → ⋮ → Supprimer). Supprime aussi le dossier
 HACS. Aucune donnée n'est stockée côté centrale — la retirer côté Home Assistant n'affecte
 pas l'app officielle ni la centrale elle-même.
 
-## 5. Prochaines étapes possibles
+## 5. What is left
 
-Voir la section "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md) — principalement le
-décodage de la télémétrie pour avoir des sensors (humidité, filtre, RPM) plutôt que juste du
-contrôle.
+See "Ce qui reste à faire" in [PROTOCOL.md](PROTOCOL.md): mostly confirming a few installer-only
+fields on other units (CO₂ sensors, hydraulic preheating) that we cannot test on ours.

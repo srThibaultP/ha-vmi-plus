@@ -55,6 +55,9 @@ async def async_setup_entry(
                            SensorDeviceClass.ENUM, None, None, None, list(SEASONS.values())),
             VmiPlusSensor(device, entry, "status", "software_version", "Version logicielle",
                            None, None, None, EntityCategory.DIAGNOSTIC),
+            VmiPlusSensor(device, entry, "bypass_state", "position", "Position bypass",
+                           None, PERCENTAGE, SensorStateClass.MEASUREMENT, EntityCategory.DIAGNOSTIC),
+            VmiPlusSensorsListSensor(device, entry),
         ]
     )
     device.start_polling()
@@ -93,4 +96,31 @@ class VmiPlusSensor(VmiPlusEntity, SensorEntity):
         data = self._device.telemetry.get(self._telemetry_type)
         if data is not None and self._field in data:
             self._attr_native_value = data[self._field]
+            self.async_write_ha_state()
+
+
+class VmiPlusSensorsListSensor(VmiPlusEntity, SensorEntity):
+    """Number of wireless sensors paired with the unit ("Sensor management").
+
+    The attributes list each sensor (id, room, kind and readings) as decoded
+    from the SensorsState frame (0x02), see PROTOCOL.md.
+    """
+
+    _attr_name = "Capteurs associés"
+    _attr_icon = "mdi:access-point-network"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
+        super().__init__(device, entry)
+        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_sensors"
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(self._device.add_update_listener(self._on_update))
+        self._on_update()
+
+    def _on_update(self) -> None:
+        data = self._device.telemetry.get("remote")
+        if data is not None and "sensors" in data:
+            self._attr_native_value = len(data["sensors"])
+            self._attr_extra_state_attributes = {"sensors": data["sensors"]}
             self.async_write_ha_state()

@@ -19,5 +19,21 @@
     "abort": {
       "cannot_connect": "Impossible de se connecter à la centrale en Bluetooth. Vérifiez qu'elle est alimentée, à portée, et qu'elle n'est pas déjà connectée à l'app VMI+ officielle."
     }
+  },
+  "services": {
+    "set_day_schedule": {
+      "name": "Programmer une journée",
+      "description": "Programme une journée des plages horaires de la VMI+ (5 plages max). Une liste vide efface la journée.",
+      "fields": {
+        "day": {
+          "name": "Jour",
+          "description": "1 = lundi ... 7 = dimanche."
+        },
+        "slots": {
+          "name": "Plages",
+          "description": "Liste de {start: heure 0-23, speed: Faible/Moyenne/Forte, temp: préchauffage °C optionnel}."
+        }
+      }
+    }
   }
 }

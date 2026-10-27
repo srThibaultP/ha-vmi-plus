@@ -37,6 +37,23 @@ REG_PREHEAT_TARGET = 0x1C
 PREHEAT_TARGET_MIN = 12
 PREHEAT_TARGET_MAX = 18
 
+# Fixed air flow ("radon") mode, special modes screen: 1 = on, 0 = off.
+# Status offset 45. Verified on the device 2026-10-27 (on then off).
+REG_FIXED_FLOW = 0x1B
+# Time slots on/off: 1 = on, 0 = off. Status offset 46; the unit answers with
+# a TimeSlotState frame (0x05). Turning it on applies the schedule right away
+# (with an empty schedule the unit went to Faible). Verified 2026-10-27.
+REG_TIME_SLOTS = 0x1D
+# "Localisation": makes the unit's LED blink to find it (app: find my device).
+REG_LOCATE = 0x02
+# "NewFilter": tells the unit a new filter was fitted, value = lifespan in
+# months (6 or 12, the two choices of the app). Resets the filter counter.
+REG_NEW_FILTER = 0x05
+FILTER_LIFESPANS = (6, 12)
+# "ByPass": read request, the unit answers with a ByPassState frame (0x18).
+POLL_REG_BYPASS = 0x14
+POLL_BYPASS_EVERY = 6  # polls, i.e. once a minute
+
 # L'app officielle ne nomme les 3 vitesses que "mode 1/2/3" (débit théorique en
 # m3/h configuré par l'installateur, propre à chaque centrale) — aucun nom
 # universel côté Ventilairsec. On utilise Faible/Moyenne/Forte, plus parlant

@@ -12,7 +12,9 @@ from homeassistant.core import HomeAssistant
 from .const import (
     CHAR_CONTROL_UUID,
     CHAR_TELEMETRY_UUID,
+    POLL_BYPASS_EVERY,
     POLL_INTERVAL_SECONDS,
+    POLL_REG_BYPASS,
     POLL_REG_PROBE,
     POLL_REG_REMOTE,
     POLL_REG_STATUS,
@@ -39,6 +41,7 @@ class VmiPlusDevice:
         self._poll_task: asyncio.Task | None = None
         self._notifying = False
         self._was_available = True
+        self._poll_count = 0
 
     def add_update_listener(self, callback: Callable[[], None]) -> Callable[[], None]:
         """Enregistre un callback appelé à chaque nouvelle donnée de télémétrie.
@@ -102,6 +105,12 @@ class VmiPlusDevice:
             client = await self._ensure_connected()
             await client.write_gatt_char(CHAR_CONTROL_UUID, frame, response=True)
 
+    async def write_frame(self, frame: bytes) -> None:
+        """Writes a pre-built frame (e.g. ConfigTimeSlot, see protocol.py)."""
+        async with self._lock:
+            client = await self._ensure_connected()
+            await client.write_gatt_char(CHAR_CONTROL_UUID, frame, response=True)
+
     def _notify_listeners(self) -> None:
         for callback in list(self._update_callbacks):
             callback()
@@ -120,7 +129,11 @@ class VmiPlusDevice:
             if not self._notifying:
                 await client.start_notify(CHAR_TELEMETRY_UUID, self._handle_notification)
                 self._notifying = True
-            for register in (POLL_REG_STATUS, POLL_REG_PROBE, POLL_REG_REMOTE):
+            registers = [POLL_REG_STATUS, POLL_REG_PROBE, POLL_REG_REMOTE]
+            if self._poll_count % POLL_BYPASS_EVERY == 0:
+                registers.append(POLL_REG_BYPASS)
+            self._poll_count += 1
+            for register in registers:
                 frame = build_frame(register, 0x00)
                 await client.write_gatt_char(CHAR_CONTROL_UUID, frame, response=True)
 

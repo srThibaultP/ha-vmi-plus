@@ -152,6 +152,8 @@ Vus une fois chacun à la connexion initiale, contenu non décodé (probablement
 
 ## Écran "Equipment life" / "General info" (filtre, n° de série, versions...)
 
+> **Superseded (2026-10-27):** all these values are in the status frame, see "The app's own decoder" below. The text of this section is kept for history.
+
 L'app affiche un écran très riche (Maintenance → Available info → Equipment life) avec : jours restants de filtre, jours de fonctionnement, n° de série, saison, débit théorique, volume à ventiler, versions logicielles/matérielles. **Ces données ne sont PAS réémises en Bluetooth pendant une session normale** : capturées à 3 reprises (connexion initiale, polling en cours, navigation directe vers cet écran), aucune n'a fait apparaître de trame contenant ces valeurs (recherche ciblée de la chaîne "MUV2310129" en hexadécimal — infructueuse à chaque fois). Hypothèse la plus probable : l'app les lit une fois au tout premier appairage (avant nos captures) et les met en cache localement (SQLite/SharedPreferences), plutôt que de les relire à chaque connexion. Pour les capturer, il faudrait vider les données de l'app (ou la réinstaller) et recapturer *exactement* la toute première connexion — pas tenté ici (destructif pour l'app installée, risque de perdre la configuration).
 
 ## Écran "Diagnostic" (autotest)
@@ -232,7 +234,7 @@ Unit → app: `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓,
 | Reg | App name | Notes |
 |---|---|---|
 | `0x01` | Test | |
-| `0x02` | Localisation | |
+| `0x02` | Localisation | LED blink (find the unit) ✓ |
 | `0x03` | State | read → State frame ✓ |
 | `0x04` | Update | firmware update |
 | `0x05` | NewFilter | filter changed, payload = interval (6/12 months). **Resets the filter counter.** |
@@ -245,15 +247,15 @@ Unit → app: `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓,
 | `0x10` | DeleteSensor | |
 | `0x12` | ErpState | |
 | `0x13` | Reset | **factory reset, never send** |
-| `0x14` / `0x15` | ByPass / ByPassForced | |
+| `0x14` / `0x15` | ByPass / ByPassForced | `0x14` = read ByPassState ✓ |
 | `0x16` / `0x23` | AutoTest / AutoTestDatas | Diagnostic screen |
 | `0x17` | Tmax | summer limit ✓ |
 | `0x18` | Mode | speed ✓ |
 | `0x19` | Boost | ✓ |
-| `0x1a` | Hollidays | ✓ |
-| `0x1b` | FixedFlow | fixed air flow (radon) mode |
+| `0x1a` | Hollidays | ✓ (app 3.19.5 sent the number of days as value; the current app sends 1/0) |
+| `0x1b` | FixedFlow | fixed air flow (radon) mode, 1/0 ✓ (status `[45]`) |
 | `0x1c` | Temp | preheat target ✓ |
-| `0x1d` | TimeSlot | |
+| `0x1d` | TimeSlot | time slots on/off ✓ (status `[46]`, answers TimeSlotState) |
 | `0x1e` | TempElec | |
 | `0x24` / `0x25` | GeoVersion / ElecVersion | |
 | `0xf9`–`0xff` | Sav7…Sav1 | after-sales actions (work code) |
@@ -275,7 +277,7 @@ Unit → app: `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓,
 | `[18]` | height / flowPerPerson | `32` | |
 | `[19]` | box | `02` | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube |
 | `[20]` | softwareVersion | `64` | `6.4` + `[49]` → `6.4.002` ✓ |
-| `[21]` | elec | `11` | electronic version |
+| `[21]` | elec | `11` | electronic version (high nibble) + software version (low nibble), app shows 1 / 1 ✓ |
 | `[22:24]` LE | ventilateVolume | `200` | m³ ✓ |
 | `[24]` | preheatType / hasHydro | `01` | electric ✓ |
 | `[25]` | bypass | `00` | real heat-exchanger bypass state |
@@ -299,13 +301,107 @@ Unit → app: `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓,
 | `[52]` | turbo_heater | `00` | "turbo heat: No" ✓ |
 | `[53]` | (newer app) | `01` | preheat button state, register `0x2f` ✓ |
 
+### Generic frame format
+
+Every frame in both directions is `A5 B6 [class] 06 [len] [payload…] [crc]`, with the same CRC as
+the command frames computed over everything before it (checked on State, UpdateDate and Command
+frames). Commands are class `0x10` with a 5-byte payload `[REG, 0, 0, 0, VAL]`. The very first
+write of a session uses `10 00` instead of `10 06` (`a5b6100005030000000016`).
+
+### SensorsState (`0x02`, answer to register `0x06`)
+
+Up to 10 wireless sensors, 10 bytes each from offset 5 (app's `readSensorsData`):
+
+| Byte | Meaning |
+|---|---|
+| `+0..+3` LE | sensor id (hex, `04249B00` for our remote control) |
+| `+4` | room: 0 unknown, 1 living, 2 kitchen, 3 bathroom 1, 4 bathroom 2, 5–8 bedroom 1–4, 9 cellar |
+| `+5` | kind: 0 absent, 1 Nexelec CO₂, 2 Nexelec temperature, 3 remote control ("assistant"), 4 box, 5 Nanosense |
+| `+6..+7` | CO₂ sensors: CO₂ ppm (LE uint16). Others: `+6` = temperature (°C, ≥128 means negative: value − 255) |
+| `+8` | humidity (%) |
+| `+9` | third value (`dataC`, 0 on our remote) |
+
+The id prefix tells the app the sensor model when pairing: `I420` CO₂, `I880` temperature,
+`ASI ` / `SNE ` remote control.
+
+### ProbesState (`0x03`, answer to register `0x07`)
+
+Up to 5 wired probes, 5 bytes each from offset 5: `[location, temperature (signed), ?, humidity, ?]`.
+Our unit has one probe ("Probe n°1 – Resistor outlet"), the 4 other slots read location `0x08`.
+
+### TimeSlotState (`0x05`) and ConfigTimeSlot (`0x19`)
+
+- Register `0x1d` = time slots on (1) / off (0), status `[46]`. The unit always answers with a
+  TimeSlotState frame. Turning it on applies the schedule at once: with an empty schedule our unit
+  dropped to Faible (we set Moyenne back afterwards).
+- TimeSlotState: `[5]` = enabled, then 7 days × 5 slots × `[start hour, speed, temp]` from offset 6.
+  `start = 0xff` means an empty slot. Speed is 0/1/2 (Faible/Moyenne/Forte).
+- ConfigTimeSlot (app → unit), one frame per day: payload `[day 1–7, (start, speed + 1, temp) × 5]`,
+  empty slot `ff 00 00`. **The unit stores the speed byte minus one**: the app sends 1/2/3, the state
+  frame reports 0/1/2. Verified on the device: Monday written with a slot at 07 h speed 2, read
+  back `07 01 ff`, then restored to `ff 00 00` ×5 (read back `ff ff 00`, identical to before).
+- `temp` is the preheat setpoint of the slot (the app offers the same list as the preheat target,
+  plus "elec+" / "hydro" on units that have them).
+
+### ByPassState (`0x18`, answer to register `0x14`)
+
+| Offset | App key | Our unit |
+|---|---|---|
+| `[5]` | position (%) | 100 |
+| `[6]` | type | 0 |
+| `[8]` | temp (°C) | 28 |
+| `[11]` | (hex) | `ff` |
+| `[17:21]` LE | id | 0 |
+| `[21]` | forced | 0 |
+| `[22]` | ask_position (%) | 100 |
+
+Register `0x15` (ByPassForced) forces the bypass; the installer settings are sent with a
+ConfigByPass frame (`0x17`: bypass_temp, bypass_type, bypass_id).
+
+### ErpState (`0x16`, answer to register `0x12`)
+
+GTC / Modbus settings: `[5]` mode, `[6]` slave address, `[7]` baud rate, `[8]` parity, `[9]` stop
+bit. Our unit (no GTC) does not answer. Written with ConfigErp (`0x15`): nb_persons,
+debit_per_person, elec_temp, gtc_slaveAdress, gtc_baudrate, gtc_mode, gtc_parity, gtc_stopBit, then
+the date (`yy mm dd hh mi ss`).
+
+### Installer configuration (Config `0x12`)
+
+Sent by the installation wizard, 18 bytes in this order: volume (2 bytes), box type, bypass_type,
+filterLifespan (months), mode, elec_temp, blowing_temp (summer limit), hydro_temp, 0, then the date
+(`yy mm dd hh mi ss`), surface, height. Not exposed in Home Assistant (it rewrites the whole
+installation).
+
+### Other functions (documented, not exposed)
+
+- **Clock sync** (UpdateDate `0x1a`): `[yy, mm, dd, hh, mi, ss]`, sent by the app on every
+  connection.
+- **Locate** (register `0x02`): LED blink; the status frame then reports `[9] = 1` while it runs.
+  Exposed as a button.
+- **Filter change** (register `0x05`, value = 6 or 12 months): from the app's code (both call sites
+  pass the number of months). Exposed as two buttons; not sent on our unit yet (filter to be
+  replaced soon, the first real use will confirm it).
+- **Self-test** (AutoTest `0x16` / AutoTestDatas `0x23` → frame `0x1b`): the Diagnostic screen of
+  the current app only shows the status bits `[10]`–`[14]`, it does not start a test.
+- **History** (Maintenance → History): StartCsv `0x09` / StartCsvV2 `0x22`, CsvLength `0x20`,
+  StopCSV `0x21`; the unit streams Csv (`0x30`) and Histo (`0x31`) frames that the app turns into a
+  CSV file and e-mails through the vendor's cloud. Not needed in Home Assistant.
+- **Firmware update** (Update `0x04`, NewUpdate `0x20`, Update `0x21`, UpdateAckData `0x22`): the app
+  downloads the firmware from Firebase and sends it in packets. Never send this by hand.
+- **Factory reset** (Reset `0x13`), **calibration** (`0x0d`), **sensor pairing / removal**
+  (ConfigSensors `0x13`, DeleteSensor `0x10`), **serialisation** (`0x0a` / `0x1f`) and
+  **after-sales work codes** (Sav1–Sav7 = `0xff`…`0xf9`): installer / after-sales only.
+- Newer app only: register `0x2c` (sent once per connection), register `0x2f` (preheat button) and
+  notification `0x50` (`…59…` at offset 19, content unknown).
+
 ## Ce qui reste à faire
 
-1. ~~Confirmer la sémantique d'écriture du registre `0x0b`~~ → confirmé bascule (toggle), voir type `0x01` ci-dessus. Exposé en `switch` avec écriture conditionnelle (ne bascule que si l'état diffère de l'état demandé).
-2. ~~Localiser le registre de Holiday mode~~ → trouvé, `0x1a`, ON et OFF confirmés (voir table ci-dessus), exposé en `switch`. ~~Reste à localiser le registre du nombre de jours~~ → confirmé que ce nombre n'est **jamais transmis en Bluetooth** (une seule trame d'écriture observée en activant Holiday avec jours=1), purement local à l'app. "Boost mode 30 min" de l'écran Special modes est confirmé (par l'utilisateur, et par capture : offset `[44]`) être le même contrôle que le bouton Boost du Dashboard principal — déjà couvert par `switch.*_boost` (registre `0x19`), rien à faire de plus ici. **Fixed air flow rate mode** et **Activating time slots** (Configuration) résistent tous les deux à un simple tap sur leur toggle — aucun changement visuel après plusieurs tentatives, alors que Holiday/Night boost/Boost réagissent immédiatement au même geste. Hypothèse : ces deux modes nécessitent de renseigner une donnée associée (un débit cible en m³/h pour le premier, des horaires pour le second) avant que le toggle n'accepte de s'activer — pas creusé plus loin (nécessiterait de configurer une valeur réelle sur la centrale de l'utilisateur sans supervision, risqué).
-3. Localiser le **% de filtre** et les **numéros de série**. Nouveau : le dashboard principal de l'app affiche en fait une jauge "FILTER" (pourcentage) en permanence, pas seulement l'écran "Equipment life" — donc potentiellement transmise en direct dans la trame de statut type `0x01`, contrairement à l'hypothèse initiale (offset non identifié, à chercher en comparant deux centrales avec un niveau de filtre différent, ou avant/après un `RESET` filtre). Les numéros de série (cf. section "Equipment life") nécessitent toujours de capturer un tout premier appairage.
-4. Décoder le tableau de 10 blocs du type `0x02` (historique horaire ?) — sur plusieurs captures espacées de quelques minutes à quelques heures, ce tableau est resté strictement identique (blocs à `0xff` suivis de zéros), cohérent avec une granularité horaire/journalière qui n'a pas eu l'occasion de changer pendant nos fenêtres de capture.
-5. ~~Vérifier si offset `[34]` du type `0x01` encode bien la vitesse~~ → confirmé (voir table ci-dessus).
-6. **Famille EXTRACTOR** (UUID différents, non capturés ici) — hors scope pour ce projet, l'utilisateur ne possède pas ce type d'appareil. Reste valable pour un futur contributeur qui en aurait un.
-7. ~~Vérifier si les handles ATT (`0x0013`/`0x000e`) sont stables entre reconnexions~~ → confirmé stables sur 12 (re)connexions réelles indépendantes, réparties sur plus de 21h de capture. La résolution par UUID reste conservée dans le code (plus robuste, coût nul).
-8. **Nouveau** — trame d'écriture non documentée envoyée une fois par connexion, juste après le registre `0x2c` : classe `0x1a` (même préfixe que le registre Holiday mais framing différent, proche de celui des notifications : `A5 B6 1a 06 06 [6 octets payload] [crc]`). Deux échantillons capturés à ~21h d'intervalle réel : `1a081a0c1f38` puis `1a081b093823`. Hypothèse (non confirmée) — synchronisation de l'horloge de la centrale sur celle du téléphone : `[mois][jour][heure][minute][seconde]` après un premier octet constant `0x1a` (le jour passe de `0x1a`=26 à `0x1b`=27 entre les deux captures, cohérent avec le passage à minuit réel). Sans effet observé sur le reste du protocole — à confirmer si besoin en comparant avec l'heure système du téléphone au moment exact de la capture.
+Everything the app does for a private customer is decoded and available in Home Assistant (see the
+README table). What is left can only be checked on other hardware or at a specific moment:
+
+1. Confirm the filter change command (`0x05` + months) the day the filter is replaced, and how the
+   app computes the FILTER % (days left / lifespan).
+2. CO₂ / Nexelec / Nanosense sensors and hydraulic or solar preheating: decoded from the app's code,
+   but our unit has none of them.
+3. Meaning of a few bytes the app reads but never displays: status `[3]`, `[18]`, `[36]`,
+   `[39:43]` ("date"), ByPassState `[11]`, notification `0x50`.

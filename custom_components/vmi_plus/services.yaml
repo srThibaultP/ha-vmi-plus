@@ -1,0 +1,18 @@
+set_day_schedule:
+  target:
+    entity:
+      integration: vmi_plus
+      domain: switch
+  fields:
+    day:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 7
+    slots:
+      required: false
+      example: '[{"start": 7, "speed": "Moyenne"}, {"start": 22, "speed": "Faible"}]'
+      selector:
+        object:

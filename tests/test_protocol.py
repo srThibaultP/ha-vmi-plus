@@ -79,9 +79,7 @@ class ParseNotificationTests(unittest.TestCase):
         frame[44] = 0x01  # boost ON
         frame[53] = 0x01  # bypass ON
         parsed = protocol.parse_notification(bytes(frame))
-        self.assertEqual(
-            parsed,
-            {
+        expected = {
                 "type": "status",
                 "night_boost": True,  # offset [33] laissé à 0x00 par défaut ici
                 "speed": 0x02,
@@ -95,8 +93,8 @@ class ParseNotificationTests(unittest.TestCase):
                 "filter_days": 0,
                 "season": "ete",
                 "software_version": "0.0.000",
-            },
-        )
+        }
+        self.assertEqual({key: parsed[key] for key in expected}, expected)
 
     def test_status_frame_real_capture_operating_days(self) -> None:
         # Real frame captured 2026-10-27 (app showed "Operating days : 1084",
@@ -143,14 +141,87 @@ class ParseNotificationTests(unittest.TestCase):
         frame[6] = 28
         frame[8] = 56
         parsed = protocol.parse_notification(bytes(frame))
-        self.assertEqual(parsed, {"type": "probe", "temperature": 28, "humidity": 56})
+        self.assertEqual((parsed["type"], parsed["temperature"], parsed["humidity"]), ("probe", 28, 56))
 
     def test_remote_frame_temperature_humidity(self) -> None:
         frame = bytearray([0xA5, 0xB6, 0x02] + [0] * 15)
         frame[11] = 24
         frame[13] = 74
         parsed = protocol.parse_notification(bytes(frame))
-        self.assertEqual(parsed, {"type": "remote", "temperature": 24, "humidity": 74})
+        self.assertEqual((parsed["type"], parsed["temperature"], parsed["humidity"]), ("remote", 24, 74))
+
+
+    def test_real_status_identity_fields(self) -> None:
+        frame = bytes.fromhex(
+            "a5b601063729013122001fffffffff00012832026411c80001003c04000000"
+            "0009000112140518b11d160b00000000c20102010200013400100b0000c7"
+        )
+        parsed = protocol.parse_notification(frame)
+        # Values shown by the app's "Equipment life" screen (serial MUV2310129).
+        self.assertEqual(parsed["serial"], "22310129")
+        self.assertEqual(parsed["box"], "Urban")
+        self.assertEqual(parsed["volume"], 200)
+        self.assertEqual(parsed["preheat_type"], "electric")
+        self.assertEqual(parsed["mechanical_version"], 1)
+        self.assertEqual(parsed["self_test"], 0x1F)
+        self.assertFalse(parsed["fixed_flow"])
+        self.assertFalse(parsed["time_slots"])
+
+    def test_real_sensors_frame(self) -> None:
+        frame = bytes.fromhex(
+            "a5b602067a009b2404030314004c00ff000000000000000000ff000000000000000000"
+            "ff000000000000000000ff000000000000000000ff000000000000000000ff00000000"
+            "0000000000ff000000000000000000ff000000000000000000ff000000000000000000"
+            "ff0000000000000000000000000000000000000000009d"
+        )
+        parsed = protocol.parse_notification(frame)
+        self.assertEqual(
+            parsed["sensors"],
+            [
+                {
+                    "slot": 0,
+                    "id": "04249B00",  # app: "Remote control - Bathroom 1 - 04249B00"
+                    "room": "bathroom1",
+                    "kind": "assistant",
+                    "temperature": 20,
+                    "humidity": 76,
+                    "data_c": 0,
+                }
+            ],
+        )
+
+    def test_real_time_slots_frame(self) -> None:
+        # State after writing day 1 = one slot at 07h, speed Moyenne (2026-10-27).
+        frame = bytes.fromhex(
+            "a5b605066a000701ffffff00ffff00ffff00ffff00ff0000ff0000ffff00ff0000"
+            "ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000"
+            "ff00ffff0000ff0000ffff00ff0000ff0000ff0000ff0000ff0000ff0000ff0000"
+            "ff0000ff0000ff0000ff00006f"
+        )
+        parsed = protocol.parse_notification(frame)
+        self.assertFalse(parsed["enabled"])
+        self.assertEqual(parsed["days"][0], [{"start": 7, "speed": 1, "temp": 0xFF}])
+        self.assertEqual(parsed["days"][1:], [[]] * 6)
+
+    def test_time_slot_frame(self) -> None:
+        # Exact frame used on the device to restore an empty Monday.
+        self.assertEqual(
+            protocol.build_time_slot_frame(1, []).hex(),
+            "a5b619061001ff0000ff0000ff0000ff0000ff0000f1",
+        )
+
+    def test_real_bypass_state_frame(self) -> None:
+        frame = bytes.fromhex("a5b61806126400001c1000ff00000000000000000000649b")
+        parsed = protocol.parse_notification(frame)
+        self.assertEqual((parsed["position"], parsed["temperature"]), (100, 28))
+        self.assertEqual(parsed["requested_position"], 100)
+
+    def test_date_frame(self) -> None:
+        # Captured from the app on 2026-10-27 at 15:50:01.
+        self.assertEqual(
+            protocol.build_date_frame(2026, 10, 27, 15, 50, 1).hex(),
+            "a5b61a06061a0a1b0f32012d",
+        )
 
 
 if __name__ == "__main__":

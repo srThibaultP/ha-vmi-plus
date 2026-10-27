@@ -1,15 +1,27 @@
-"""Switches Boost (0x19), Bypass (0x2f), Holiday (0x1a) et Mode nuit (0x0b) de la centrale VMI+."""
+"""Switches Boost (0x19), Préchauffage (0x2f), Holiday (0x1a), Mode nuit (0x0b),
+Débit fixe (0x1b) et Plages horaires (0x1d) de la centrale VMI+."""
 from __future__ import annotations
 
 from typing import Any
 
+import voluptuous as vol
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS, EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import REG_BOOST, REG_BYPASS, REG_HOLIDAY, REG_NIGHT_BOOST_TOGGLE
+from .const import (
+    REG_BOOST,
+    REG_BYPASS,
+    REG_FIXED_FLOW,
+    REG_HOLIDAY,
+    REG_NIGHT_BOOST_TOGGLE,
+    REG_TIME_SLOTS,
+    SPEED_OPTIONS,
+)
+from .protocol import TIME_SLOTS_PER_DAY, build_time_slot_frame
 from .device import VmiPlusDevice
 from .entity import VmiPlusEntity
 
@@ -30,9 +42,36 @@ async def async_setup_entry(
             VmiPlusSwitch(device, entry, "bypass", "Préchauffage", REG_BYPASS, "bypass"),
             VmiPlusSwitch(device, entry, "holiday", "Holiday", REG_HOLIDAY, "holiday"),
             VmiPlusNightBoostSwitch(device, entry),
+            VmiPlusSwitch(device, entry, "fixed_flow", "Débit fixe (radon)", REG_FIXED_FLOW, "fixed_flow"),
+            VmiPlusTimeSlotsSwitch(device, entry),
             VmiPlusConnectionSwitch(device, entry),
         ]
     )
+
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_SET_DAY_SCHEDULE,
+        {
+            vol.Required("day"): vol.All(vol.Coerce(int), vol.Range(min=1, max=7)),
+            vol.Optional("slots", default=[]): vol.All(
+                cv.ensure_list,
+                vol.Length(max=TIME_SLOTS_PER_DAY),
+                [
+                    {
+                        vol.Required("start"): vol.All(vol.Coerce(int), vol.Range(min=0, max=23)),
+                        vol.Required("speed"): vol.In(list(SPEED_OPTIONS)),
+                        vol.Optional("temp", default=0xFF): vol.All(
+                            vol.Coerce(int), vol.Range(min=0, max=0xFF)
+                        ),
+                    }
+                ],
+            ),
+        },
+        "async_set_day_schedule",
+    )
+
+
+SERVICE_SET_DAY_SCHEDULE = "set_day_schedule"
 
 
 class VmiPlusSwitch(VmiPlusEntity, SwitchEntity):
@@ -76,6 +115,45 @@ class VmiPlusSwitch(VmiPlusEntity, SwitchEntity):
         await self._device.write_register(self._register, 0x00)
         self._attr_is_on = False
         self.async_write_ha_state()
+
+
+class VmiPlusTimeSlotsSwitch(VmiPlusSwitch):
+    """Plages horaires on/off (register 0x1d), with the weekly schedule as attributes.
+
+    The unit sends its schedule (TimeSlotState frame) whenever the switch is
+    written or a day is programmed with the `vmi_plus.set_day_schedule`
+    service. Turning it on applies the schedule right away.
+    """
+
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
+        super().__init__(device, entry, "time_slots", "Plages horaires", REG_TIME_SLOTS, "time_slots")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        data = self._device.telemetry.get("time_slots")
+        if data is None:
+            return None
+        speeds = {value: option for option, value in SPEED_OPTIONS.items()}
+        return {
+            f"jour_{index + 1}": [
+                {"start": slot["start"], "speed": speeds.get(slot["speed"], slot["speed"]), "temp": slot["temp"]}
+                for slot in slots
+            ]
+            for index, slots in enumerate(data["days"])
+        }
+
+    async def async_set_day_schedule(self, day: int, slots: list[dict]) -> None:
+        """Programs one day (1 = Monday) with up to 5 slots."""
+        frame = build_time_slot_frame(
+            day,
+            [
+                {"start": slot["start"], "speed": SPEED_OPTIONS[slot["speed"]], "temp": slot["temp"]}
+                for slot in sorted(slots, key=lambda slot: slot["start"])
+            ],
+        )
+        await self._device.write_frame(frame)
 
 
 class VmiPlusNightBoostSwitch(VmiPlusEntity, SwitchEntity):

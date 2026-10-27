@@ -19,5 +19,21 @@
     "abort": {
       "cannot_connect": "Could not connect to the unit over Bluetooth. Make sure it is powered, in range, and not already connected to the official VMI+ app."
     }
+  },
+  "services": {
+    "set_day_schedule": {
+      "name": "Set day schedule",
+      "description": "Programs one day of the VMI+ time slots (up to 5 slots). Empty slots list clears the day.",
+      "fields": {
+        "day": {
+          "name": "Day",
+          "description": "1 = Monday ... 7 = Sunday."
+        },
+        "slots": {
+          "name": "Slots",
+          "description": "List of {start: hour 0-23, speed: Faible/Moyenne/Forte, temp: optional preheat °C}."
+        }
+      }
+    }
   }
 }
