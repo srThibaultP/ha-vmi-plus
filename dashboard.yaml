@@ -1,21 +1,16 @@
-# Dashboard Lovelace qui reprend la mise en page de l'app VMI+ officielle
-# (vitesse / boost / bypass / sondes) avec les entités de l'intégration vmi_plus.
+# Lovelace dashboard laid out like the official VMI+ app (home screen, special
+# modes, simplified configuration, maintenance) with the vmi_plus entities.
 #
-# Installation : Paramètres → Tableaux de bord → Ajouter un tableau de bord →
-# "Nouveau tableau de bord vide", puis menu (⋮) → Modifier en YAML, et coller
-# le contenu ci-dessous (sans la ligne "views:" en double si l'éditeur en a
-# déjà une).
+# Install: Settings → Dashboards → Add dashboard → "New dashboard from
+# scratch", then menu (⋮) → Edit in YAML and paste the content below (drop the
+# duplicate "views:" line if the editor already has one).
 #
-# Toutes les entités référencées existent déjà dans l'intégration vmi_plus —
-# aucune carte custom (HACS frontend) requise, uniquement des cartes intégrées
-# à Home Assistant (tile, gauge, grid).
+# Built-in cards only (tile, gauge, grid, entities), nothing to install from
+# HACS.
 #
-# ⚠️ Adapte le préfixe "urban_" des entity_id ci-dessous : Home Assistant le
-# génère à partir du nom de TON appareil (Paramètres → Appareils → VMI+ →
-# nom en haut de page), pas du nom de l'intégration. Si tu as renommé
-# l'appareil, ou si la centrale s'est annoncée sous un autre nom que "Urban"
-# à la découverte, ajuste en conséquence (vérifiable dans Outils de
-# développement → États).
+# ⚠️ Adjust the "urban_" prefix of the entity_ids below: Home Assistant builds
+# it from YOUR device name (Settings → Devices → VMI+ → name at the top), not
+# from the integration name. Check them in Developer tools → States.
 
 title: VMI+
 views:
@@ -28,7 +23,7 @@ views:
 
       - type: tile
         entity: select.urban_vitesse
-        name: Vitesse
+        name: Speed
         icon: mdi:fan
         features_position: bottom
         features:
@@ -45,22 +40,51 @@ views:
             vertical: true
           - type: tile
             entity: switch.urban_bypass
-            name: Bypass (air neuf direct)
+            name: Preheating
             icon: mdi:heat-wave
+            vertical: true
+
+      - type: gauge
+        entity: sensor.urban_autonomie_filtre
+        name: Filter (days left)
+        min: 0
+        max: 180
+        needle: true
+        severity:
+          red: 0
+          yellow: 15
+          green: 45
+
+      - type: markdown
+        content: "## 🌙 Special modes"
+
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: tile
+            entity: switch.urban_holiday
+            name: Holiday
+            icon: mdi:bag-suitcase
             vertical: true
           - type: tile
             entity: switch.urban_mode_nuit
-            name: Mode nuit (sur-ventilation gratuite)
+            name: Night ventilation boost
             icon: mdi:weather-night
             vertical: true
           - type: tile
-            entity: switch.urban_holiday
-            name: Holiday (absence prolongée)
-            icon: mdi:bag-suitcase
+            entity: switch.urban_debit_fixe_radon
+            name: Fixed air flow (radon)
+            icon: mdi:radioactive
+            vertical: true
+          - type: tile
+            entity: switch.urban_plages_horaires
+            name: Time slots
+            icon: mdi:calendar-clock
             vertical: true
 
       - type: markdown
-        content: "## 💧 Sondes"
+        content: "## 💧 Measurements"
 
       - type: grid
         columns: 2
@@ -68,7 +92,7 @@ views:
         cards:
           - type: gauge
             entity: sensor.urban_humidite_sonde_interne
-            name: Humidité — sonde interne
+            name: Humidity — internal probe
             min: 0
             max: 100
             needle: true
@@ -78,7 +102,7 @@ views:
               red: 80
           - type: gauge
             entity: sensor.urban_humidite_piece
-            name: Humidité — pièce (salle de bain)
+            name: Humidity — room (remote control)
             min: 0
             max: 100
             needle: true
@@ -86,32 +110,49 @@ views:
               green: 0
               yellow: 60
               red: 80
-
-      - type: grid
-        columns: 2
-        square: false
-        cards:
           - type: tile
             entity: sensor.urban_temperature_sonde_interne
-            name: Température — sonde interne
+            name: Temperature — internal probe
             icon: mdi:thermometer
           - type: tile
             entity: sensor.urban_temperature_piece
-            name: Température — pièce
+            name: Temperature — room
             icon: mdi:thermometer
 
       - type: markdown
-        content: "## ⚙️ Connexion"
+        content: "## ⚙️ Simplified configuration"
 
-      - type: tile
-        entity: switch.urban_connexion_bluetooth
-        name: Connexion Bluetooth
-        icon: mdi:bluetooth
+      - type: entities
+        entities:
+          - entity: sensor.urban_debit_theorique
+            name: Theoretical air flow
+          - entity: number.urban_temperature_de_prechauffage
+            name: Preheat to
+          - entity: number.urban_limite_temperature_ete
+            name: Summer limit
+          - entity: sensor.urban_saison
+            name: Season
 
       - type: markdown
-        content: >
-          ℹ️ Vitesse/Boost/Bypass/Holiday/Mode nuit reflètent une vraie
-          lecture de l'appareil (rafraîchie au plus toutes les 10s), pas
-          seulement la dernière commande envoyée — voir README.
-          Filtre, n° de série et historique ne sont pas (encore) disponibles
-          en Bluetooth — voir PROTOCOL.md.
+        content: "## 🛠️ Maintenance"
+
+      - type: entities
+        entities:
+          - entity: sensor.urban_jours_de_fonctionnement
+            name: Operating days
+          - entity: binary_sensor.urban_autotest
+            name: Self-test
+          - entity: binary_sensor.urban_bypass_echangeur
+            name: Heat-exchanger bypass
+          - entity: sensor.urban_capteurs_associes
+            name: Paired sensors
+          - entity: sensor.urban_version_logicielle
+            name: Software version
+          - entity: button.urban_localiser_led
+            name: Locate (LED)
+          - entity: button.urban_filtre_change_6_mois
+            name: New filter fitted (6 months)
+          - entity: button.urban_filtre_change_12_mois
+            name: New filter fitted (12 months)
+          - entity: switch.urban_connexion_bluetooth
+            name: Bluetooth connection
