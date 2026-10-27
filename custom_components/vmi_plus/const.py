@@ -30,6 +30,12 @@ REG_HOLIDAY = 0x1A
 REG_SUMMER_LIMIT = 0x17
 SUMMER_LIMIT_MIN = 22  # range offered by the app's drop-down
 SUMMER_LIMIT_MAX = 35
+# Preheat target in °C ("Simplified configuration -> During the winter"), 0 =
+# no preheating. Confirmed 2026-10-27 (18 -> 16 -> 0 -> 12 -> 18): status
+# offset 35. The app offers "Mini" (= 12) to 18 °C.
+REG_PREHEAT_TARGET = 0x1C
+PREHEAT_TARGET_MIN = 12
+PREHEAT_TARGET_MAX = 18
 
 # L'app officielle ne nomme les 3 vitesses que "mode 1/2/3" (débit théorique en
 # m3/h configuré par l'installateur, propre à chaque centrale) — aucun nom

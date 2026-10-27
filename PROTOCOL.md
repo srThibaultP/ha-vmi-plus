@@ -185,6 +185,17 @@ New capture (phone HCI snoop + direct reads from a Raspberry Pi with bleak), rea
 - **Register `0x17` = summer supply-air limit (°C)**, confirmed by changing it in the app
   (24 → 26 → 24 °C, frames `a5b6100605170000001a1e` / `a5b610060517000000181c`). Read back at status
   offset `[38]`. Exposed as `number.*_limite_temperature_ete` (22–35 °C, like the app).
+- **Register `0x1c` = preheat target (°C), `0` = no preheating**, confirmed by changing it in the
+  app: 18 → 16 → "no preheating" (`0`) → "Mini" (`12`) → 18. Read back at status offset `[35]`.
+  Exposed as `number.*_temperature_de_prechauffage` (12–18 °C, like the app).
+  - Status `[53]` (so far called "bypass") dropped to `0` when "no preheating" was chosen and came
+    back to `1` with any temperature: register `0x2f` is the app's **preheat button** (heat-wave
+    icon on the home screen), not a heat-exchanger bypass. The HA switch is renamed "Préchauffage"
+    (entity_id unchanged).
+  - Status `[36]` went `0x14` (18/16 °C) → `0x00` (off, and also at 12 °C). Unknown, maybe the
+    current heating demand.
+- Theoretical air flow slider (50 %): could not be moved from adb on a private-customer account, so
+  not tested.
 - Opening every Configuration / Maintenance / Sensor management screen sends **no extra read**: the
   app builds all of them from the status frame (`0x01`) and the probe frames. So everything the app
   shows is in those frames.
@@ -199,7 +210,6 @@ New capture (phone HCI snoop + direct reads from a Raspberry Pi with bleak), rea
   | `[18]` | `0x32` = 50 | Theoretical air flow slider 50 % (90 m³/h) |
   | `[22]` | `0xc8` = 200 | Volume to ventilate 200 m³ |
   | `[28:32]` | `00 00 00 00` | Filter life 0 days / FILTER 0 % (filter interval set to 6 months) |
-  | `[35]` | `0x12` = 18 | Preheat target 18 °C (was `0x00` with the preheat button off in August, i.e. the HA "Bypass" switch, register `0x2f`, is really the app's preheat button) |
   | `[47:49]` LE | `0x01c2` = 450 | Changes with the speed (360/450/550), unit unknown |
 - Maintenance → History does not read anything over BLE: it asks for an e-mail address and the
   history is sent by the vendor's cloud.

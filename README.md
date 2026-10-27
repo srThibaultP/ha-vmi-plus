@@ -54,7 +54,8 @@ développement → États) :
   la centrale ventile en continu et ne peut pas être éteinte, alors que le domaine `fan` de HA
   impose toujours une position "Off")
 - **Boost** (`switch`, suffixe `_boost`) — surventilation 30 min
-- **Bypass** (`switch`, suffixe `_bypass`) — contournement de l'échangeur (préchauffage gratuit
+- **Préchauffage** (`switch`, suffixe `_bypass`; named "Bypass" before v0.4.0, register `0x2f` turned
+  out to be the app's preheat button) — contournement de l'échangeur (préchauffage gratuit
   de l'air, utile en hiver)
 - **Holiday** (`switch`, suffixe `_holiday`) — mode absence prolongée. ⚠️ L'app officielle
   demande aussi un nombre de jours, mais cette valeur n'est **jamais transmise à la centrale**
@@ -73,6 +74,8 @@ développement → États) :
 - **Limite température été** (`number`, suffix `_limite_temperature_ete`, config) — the app's
   "During the summer" setting: incoming air flow is limited when it is hotter than this outside
   (22–35 °C).
+- **Température de préchauffage** (`number`, suffix `_temperature_de_prechauffage`, config) — the
+  app's "During the winter" preheat target (12–18 °C). Setting a value also turns preheating on.
 - **Mode nuit** (`switch`, suffixe `_mode_nuit`) — "Night ventilation boost" (sur-ventilation
   nocturne gratuite été/préchauffage passif hiver). ⚠️ Registre à bascule (pas de valeur
   explicite ON/OFF comme les autres switches, voir PROTOCOL.md) : cette entité ne bascule que

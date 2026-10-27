@@ -1,8 +1,13 @@
-"""Summer supply-air temperature limit (register 0x17) of the VMI+ unit.
+"""Temperature settings of the VMI+ unit (app screen "Simplified configuration").
 
-App screen "Simplified configuration -> During the summer": the unit limits
-incoming air flow as much as possible when the outdoor temperature is above
-this value. Read back from the status frame (offset 38), see PROTOCOL.md.
+- Summer limit (register 0x17, status offset 38): incoming air flow is limited
+  as much as possible when the outdoor temperature is above this value.
+- Preheat target (register 0x1c, status offset 35): the blown air is preheated
+  to this temperature. 0 means "no preheating"; writing a temperature turns
+  preheating back on (same as the app).
+
+All values confirmed by changing them in the app and reading the status frame,
+see PROTOCOL.md.
 """
 from __future__ import annotations
 
@@ -12,7 +17,14 @@ from homeassistant.const import CONF_ADDRESS, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import REG_SUMMER_LIMIT, SUMMER_LIMIT_MAX, SUMMER_LIMIT_MIN
+from .const import (
+    PREHEAT_TARGET_MAX,
+    PREHEAT_TARGET_MIN,
+    REG_PREHEAT_TARGET,
+    REG_SUMMER_LIMIT,
+    SUMMER_LIMIT_MAX,
+    SUMMER_LIMIT_MIN,
+)
 from .device import VmiPlusDevice
 from .entity import VmiPlusEntity
 
@@ -23,23 +35,46 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     device: VmiPlusDevice = entry.runtime_data
-    async_add_entities([VmiPlusSummerLimitNumber(device, entry)])
+    async_add_entities(
+        [
+            VmiPlusTemperatureNumber(
+                device, entry, "summer_limit", "Limite température été", "mdi:sun-thermometer",
+                REG_SUMMER_LIMIT, SUMMER_LIMIT_MIN, SUMMER_LIMIT_MAX,
+            ),
+            VmiPlusTemperatureNumber(
+                device, entry, "preheat_target", "Température de préchauffage", "mdi:heat-wave",
+                REG_PREHEAT_TARGET, PREHEAT_TARGET_MIN, PREHEAT_TARGET_MAX,
+            ),
+        ]
+    )
 
 
-class VmiPlusSummerLimitNumber(VmiPlusEntity, NumberEntity):
-    _attr_name = "Limite température été"
-    _attr_icon = "mdi:sun-thermometer"
+class VmiPlusTemperatureNumber(VmiPlusEntity, NumberEntity):
     _attr_device_class = NumberDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    _attr_native_min_value = SUMMER_LIMIT_MIN
-    _attr_native_max_value = SUMMER_LIMIT_MAX
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
     _attr_entity_category = EntityCategory.CONFIG
 
-    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
+    def __init__(
+        self,
+        device: VmiPlusDevice,
+        entry: ConfigEntry,
+        field: str,
+        name: str,
+        icon: str,
+        register: int,
+        min_value: int,
+        max_value: int,
+    ) -> None:
         super().__init__(device, entry)
-        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_summer_limit"
+        self._field = field
+        self._register = register
+        self._attr_name = name
+        self._attr_icon = icon
+        self._attr_native_min_value = min_value
+        self._attr_native_max_value = max_value
+        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{field}"
         self._attr_native_value: float | None = None
 
     async def async_added_to_hass(self) -> None:
@@ -47,11 +82,13 @@ class VmiPlusSummerLimitNumber(VmiPlusEntity, NumberEntity):
 
     def _on_update(self) -> None:
         data = self._device.telemetry.get("status")
-        if data is not None and "summer_limit" in data:
-            self._attr_native_value = data["summer_limit"]
+        if data is not None and self._field in data:
+            # 0 (preheating off) is outside the settable range: show it as unknown.
+            value = data[self._field]
+            self._attr_native_value = value if value >= self._attr_native_min_value else None
         self.async_write_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
-        await self._device.write_register(REG_SUMMER_LIMIT, int(value))
+        await self._device.write_register(self._register, int(value))
         self._attr_native_value = int(value)
         self.async_write_ha_state()

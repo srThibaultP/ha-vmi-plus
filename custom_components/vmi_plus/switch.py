@@ -23,7 +23,11 @@ async def async_setup_entry(
     async_add_entities(
         [
             VmiPlusSwitch(device, entry, "boost", "Boost", REG_BOOST, "boost"),
-            VmiPlusSwitch(device, entry, "bypass", "Bypass", REG_BYPASS, "bypass"),
+            # Register 0x2f is the app's preheat button (heat-wave icon); status
+            # offset 53 also drops to 0 when preheating is disabled from the
+            # "Simplified configuration" screen, see PROTOCOL.md. Key kept as
+            # "bypass" so the unique_id and entity_id don't change.
+            VmiPlusSwitch(device, entry, "bypass", "Préchauffage", REG_BYPASS, "bypass"),
             VmiPlusSwitch(device, entry, "holiday", "Holiday", REG_HOLIDAY, "holiday"),
             VmiPlusNightBoostSwitch(device, entry),
             VmiPlusConnectionSwitch(device, entry),

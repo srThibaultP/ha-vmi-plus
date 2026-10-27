@@ -90,6 +90,7 @@ class ParseNotificationTests(unittest.TestCase):
                 "bypass": True,
                 "operating_days": 0,
                 "summer_limit": 0,
+                "preheat_target": 0,
             },
         )
 
@@ -106,6 +107,19 @@ class ParseNotificationTests(unittest.TestCase):
         self.assertTrue(parsed["night_boost"])
         self.assertTrue(parsed["bypass"])
         self.assertEqual(parsed["summer_limit"], 24)
+        self.assertEqual(parsed["preheat_target"], 18)
+
+    def test_preheat_disabled_frame(self) -> None:
+        # Captured 2026-10-27 right after choosing "no preheating" in the app.
+        frame = bytes.fromhex(
+            "a5b601063729013122001fffffffff00012832026411c80001003c04000000"
+            "0009000100000518b11d160b00000000c20102010200003400100b0000c0"
+        )
+        parsed = protocol.parse_notification(frame)
+        self.assertEqual(parsed["preheat_target"], 0)
+        self.assertFalse(parsed["bypass"])
+        self.assertEqual(protocol.build_frame(0x1C, 0).hex(), "a5b61006051c000000000f")
+        self.assertEqual(protocol.build_frame(0x1C, 18).hex(), "a5b61006051c000000121d")
 
     def test_summer_limit_frames(self) -> None:
         # Captured 2026-10-27: summer limit set to 26 °C, then back to 24 °C.
