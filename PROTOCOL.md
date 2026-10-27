@@ -394,6 +394,63 @@ installation).
 - Newer app only: register `0x2c` (sent once per connection), register `0x2f` (preheat button) and
   notification `0x50` (`…59…` at offset 19, content unknown).
 
+### After-sales menu (current app 3.23.x)
+
+Maintenance → "Action by the after-sales service" asks for a work code, then offers (labels from
+the app's translation files): reset factory settings, force machine update, force MEV firmware
+(VMC-E), force PIV firmware (VMC-I), force install, "password cycle", "password N6", and declare an
+after-sales case (report link). They are part of the production build. Each one ends up as one of
+the Sav1–Sav7 command registers (`0xff`…`0xf9`) and the unit restarts and disconnects. Which work
+code unlocks which option, and whether codes are checked online, is in the part of the current app
+blutter cannot decompile. The 3.19.5 app had no code at all: buttons "Command 1"…"Command 7" plus
+"Force install". **Never send these registers.**
+
+### Error codes known by the app
+
+From the app's translation files (`error_code_XX`); where the code travels in the frames is not
+located yet (no fault on our unit).
+
+| Code | Meaning |
+|---|---|
+| `01` | Resistor failure |
+| `02` | Preheating cannot be used to reach the setpoint temperature |
+| `10` | Motor failure |
+| `20` | Replace filter |
+| `30` | IAQ sensor failure |
+| `31` | IAQ sensor no. 1 failure |
+| `32` | IAQ sensor no. 2 failure |
+| `33` | IAQ sensor no. 3 failure |
+| `34` | IAQ sensor no. 4 failure |
+| `35` | IAQ sensor no. 5 failure |
+| `36` | IAQ sensor no. 6 failure |
+| `37` | IAQ sensor no. 7 failure |
+| `38` | IAQ sensor no. 8 failure |
+| `39` | IAQ sensor no. 9 failure |
+| `3A` | Problem with several IAQ sensors |
+| `3B` | Pairing problem for an IAQ sensor |
+| `40` | Unknown problem with the remote control. |
+| `41` | Remote control temperature error. |
+| `42` | Loss of remote control communication. |
+| `43` | Remote control low battery. |
+| `44` | Multiple remote control failures. |
+| `50` | Probe failure in the housing unit |
+| `51` | Resistor outlet probe failure |
+| `52` | Machine inlet probe failure |
+| `53` | HydroR® outlet probe failure |
+| `55` | Bypass outlet probe failure |
+| `56` | Bypass external air side probe failure |
+| `57` | Bypass roof space side probe failure |
+| `5E` | Filter pressure probe failures |
+| `5F` | Several probe failures |
+| `61` | Bypass error |
+| `65` | Software download error |
+| `70` | Multiple errors |
+| `81` | Bypass communications error |
+| `82` | Bypass communications error |
+| `83` | Blocked Bypass damper |
+| `vmc_51` | Housing unit probe failure |
+| `vmc_58` | Housing unit probe frozen |
+
 ## Ce qui reste à faire
 
 Everything the app does for a private customer is decoded and available in Home Assistant (see the
@@ -403,5 +460,6 @@ README table). What is left can only be checked on other hardware or at a specif
    app computes the FILTER % (days left / lifespan).
 2. CO₂ / Nexelec / Nanosense sensors and hydraulic or solar preheating: decoded from the app's code,
    but our unit has none of them.
-3. Meaning of a few bytes the app reads but never displays: status `[3]`, `[18]`, `[36]`,
+3. Where the error codes above appear in the frames (needs a unit with a fault).
+4. Meaning of a few bytes the app reads but never displays: status `[3]`, `[18]`, `[36]`,
    `[39:43]` ("date"), ByPassState `[11]`, notification `0x50`.
