@@ -77,7 +77,7 @@
         "default": "mdi:weather-night"
       },
       "fixed_flow": {
-        "default": "mdi:fan-lock"
+        "default": "mdi:fan-auto"
       },
       "time_slots": {
         "default": "mdi:calendar-clock"
