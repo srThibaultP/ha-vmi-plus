@@ -23,6 +23,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .device import VmiPlusDevice
+from .protocol import SEASONS
 from .entity import VmiPlusEntity
 
 PARALLEL_UPDATES = 0
@@ -48,6 +49,12 @@ async def async_setup_entry(
             VmiPlusSensor(device, entry, "status", "air_flow", "Débit théorique",
                            SensorDeviceClass.VOLUME_FLOW_RATE,
                            UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR),
+            VmiPlusSensor(device, entry, "status", "filter_days", "Autonomie filtre",
+                           SensorDeviceClass.DURATION, UnitOfTime.DAYS),
+            VmiPlusSensor(device, entry, "status", "season", "Saison",
+                           SensorDeviceClass.ENUM, None, None, None, list(SEASONS.values())),
+            VmiPlusSensor(device, entry, "status", "software_version", "Version logicielle",
+                           None, None, None, EntityCategory.DIAGNOSTIC),
         ]
     )
     device.start_polling()
@@ -61,10 +68,11 @@ class VmiPlusSensor(VmiPlusEntity, SensorEntity):
         telemetry_type: str,
         field: str,
         name: str,
-        device_class: SensorDeviceClass,
-        unit: str,
-        state_class: SensorStateClass = SensorStateClass.MEASUREMENT,
+        device_class: SensorDeviceClass | None,
+        unit: str | None,
+        state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT,
         entity_category: EntityCategory | None = None,
+        options: list[str] | None = None,
     ) -> None:
         super().__init__(device, entry)
         self._telemetry_type = telemetry_type
@@ -75,6 +83,7 @@ class VmiPlusSensor(VmiPlusEntity, SensorEntity):
         self._attr_native_unit_of_measurement = unit
         self._attr_state_class = state_class
         self._attr_entity_category = entity_category
+        self._attr_options = options
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(self._device.add_update_listener(self._on_update))

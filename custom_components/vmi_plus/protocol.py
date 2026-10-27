@@ -5,6 +5,10 @@ vérifiée trame par trame contre une centrale VMCI physique).
 """
 
 
+# Season byte of the status frame, as decoded by the app ("season_" + name).
+SEASONS = {0x00: "ete", 0x01: "hiver", 0x02: "intermediaire"}
+
+
 def checksum(data: bytes) -> int:
     """CRC-8 (poly triviale, init=0) XOR 0x13, vérifié sur 11 trames réelles."""
     crc = 0
@@ -58,6 +62,13 @@ def parse_notification(data: bytes) -> dict | None:
             # Theoretical air flow of the current speed, little-endian uint16
             # in 1/5 m³/h (360/450/550 = 72/90/110 m³/h, matches the app).
             "air_flow": int.from_bytes(data[47:49], "little") / 5,
+            # Fields below come from the app's own status parser
+            # (BluetoothModel.readMachineState, app 3.19.5), see PROTOCOL.md.
+            # Remaining filter life in days ("autonomy"), little-endian uint16.
+            "filter_days": int.from_bytes(data[28:30], "little"),
+            "season": SEASONS.get(data[51]),
+            # Embedded software version, e.g. 0x64 + 0x02 -> "6.4.002".
+            "software_version": f"{data[20] >> 4}.{data[20] & 0x0F}.{data[49]:03d}",
         }
 
     if frame_type == 0x03 and len(data) >= 9:

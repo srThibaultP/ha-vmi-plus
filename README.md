@@ -7,8 +7,7 @@ Intégration non-officielle pour piloter en Bluetooth Low Energy une centrale de
 d'une capture BLE réelle. Détails complets du protocole : [PROTOCOL.md](PROTOCOL.md).
 
 **Vérifié contre du matériel réel** : vitesse (1/2/3), Boost, Bypass, et température/humidité
-des deux sondes (interne + télécommande/pièce). **Pas encore fait** : % de filtre, numéros de
-série, historique — voir "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md).
+des deux sondes (interne + télécommande/pièce). **Pas encore fait** : % de filtre (the days left are exposed), historique — voir "Ce qui reste à faire" dans [PROTOCOL.md](PROTOCOL.md).
 
 ## 0. Tests unitaires du protocole
 
@@ -73,6 +72,12 @@ développement → États) :
   operating days counter, same value as the app's "Equipment life" screen.
 - **Débit théorique** (`sensor`, suffix `_debit_theorique`) — theoretical air flow of the current
   speed in m³/h, as shown by the app (72/90/110 m³/h on our unit).
+- **Autonomie filtre** (`sensor`, suffix `_autonomie_filtre`) — remaining filter life in days, as
+  in the app's "Equipment life" screen.
+- **Saison** (`sensor`, suffix `_saison`) — season used by the unit (`ete` / `hiver` /
+  `intermediaire`).
+- **Version logicielle** (`sensor`, suffix `_version_logicielle`, diagnostic) — embedded software
+  version (e.g. `6.4.002`).
 - **Limite température été** (`number`, suffix `_limite_temperature_ete`, config) — the app's
   "During the summer" setting: incoming air flow is limited when it is hotter than this outside
   (22–35 °C).

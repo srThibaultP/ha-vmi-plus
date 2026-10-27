@@ -204,17 +204,100 @@ New capture (phone HCI snoop + direct reads from a Raspberry Pi with bleak), rea
   shows is in those frames.
 - The last byte of the status frame (`[60]`) is a checksum of the frame, not a rolling counter: it
   changes only when the content changes (`c7` → `c5` when `[38]` went from 24 to 26).
-- Status frame candidates matching values shown by the app (not yet confirmed by a diff):
-
-  | Offset | Value | App value |
-  |---|---|---|
-  | `[5:9]` LE | `0x22310129` | Serial number `MUV2310129` (digits after the leading `2`) |
-  | `[6]` | `0x01` | Season "Intermediate" (?) |
-  | `[18]` | `0x32` = 50 | Unknown (the slider's accessibility label says "50%" whatever its position) |
-  | `[22]` | `0xc8` = 200 | Volume to ventilate 200 m³ |
-  | `[28:32]` | `00 00 00 00` | Filter life 0 days / FILTER 0 % (filter interval set to 6 months) |
+- The earlier "candidate offsets" are now all resolved by the app's own decoder, see the next
+  section.
 - Maintenance → History does not read anything over BLE: it asks for an e-mail address and the
   history is sent by the vendor's cloud.
+
+## The app's own decoder (app 3.19.5, decompiled)
+
+The app 3.19.5 (Dart 3.5.3, from APKPure) was decompiled with
+[blutter](https://github.com/worawit/blutter). The current app (3.23.x) is built with a Dart version
+blutter cannot read yet. Offsets below are indexes in the raw notification, header included
+(`[0]`=`a5`, `[1]`=`b6`, `[2]`=frame type). Values checked against our 2026-10-27 frame and the
+app's screens are marked ✓.
+
+### Frame classes (byte `[2]`)
+
+App → unit: `0x10` Command, `0x11` Setting, `0x12` Config, `0x13` ConfigSensors, `0x15` ConfigErp,
+`0x17` ConfigByPass, `0x19` ConfigTimeSlot, `0x1a` UpdateDate (clock sync ✓), `0x20` NewUpdate,
+`0x21` Update, `0x22` UpdateAckData.
+
+Unit → app: `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓, `0x04` SimpleData,
+`0x05` TimeSlotState, `0x16` ErpState, `0x18` ByPassState, `0x1b` AutoTestDatas, `0x23` AckData,
+`0x30` Csv, `0x31` Histo, `0xff` Nack.
+
+### Command registers (class `0x10`, `A5 B6 10 06 05 [REG] 00 00 00 [VAL] [CRC]`)
+
+| Reg | App name | Notes |
+|---|---|---|
+| `0x01` | Test | |
+| `0x02` | Localisation | |
+| `0x03` | State | read → State frame ✓ |
+| `0x04` | Update | firmware update |
+| `0x05` | NewFilter | filter changed, payload = interval (6/12 months). **Resets the filter counter.** |
+| `0x06` | Sensors | read → SensorsState ✓ |
+| `0x07` | Probes | read → ProbesState ✓ |
+| `0x09` / `0x22` / `0x21` / `0x20` | StartCsv / StartCsvV2 / StopCSV / CsvLength | history export |
+| `0x0a` / `0x1f` | Old/NewSerialisation | |
+| `0x0b` | Surventilation | night ventilation boost ✓ (toggle) |
+| `0x0d` | Calibration | |
+| `0x10` | DeleteSensor | |
+| `0x12` | ErpState | |
+| `0x13` | Reset | **factory reset, never send** |
+| `0x14` / `0x15` | ByPass / ByPassForced | |
+| `0x16` / `0x23` | AutoTest / AutoTestDatas | Diagnostic screen |
+| `0x17` | Tmax | summer limit ✓ |
+| `0x18` | Mode | speed ✓ |
+| `0x19` | Boost | ✓ |
+| `0x1a` | Hollidays | ✓ |
+| `0x1b` | FixedFlow | fixed air flow (radon) mode |
+| `0x1c` | Temp | preheat target ✓ |
+| `0x1d` | TimeSlot | |
+| `0x1e` | TempElec | |
+| `0x24` / `0x25` | GeoVersion / ElecVersion | |
+| `0xf9`–`0xff` | Sav7…Sav1 | after-sales actions (work code) |
+
+`0x2c` and `0x2f` (sent by the newer app) are not in the 3.19.5 table.
+
+### State frame (`0x01`) fields
+
+| Offset | App key | Our frame | Meaning |
+|---|---|---|---|
+| `[3]` | — | `06` | used for a version check |
+| `[5:9]` LE, hex | machineId | `22310129` | serial number, the app shows `MUV2310129` ✓ |
+| `[9]` | — | `00` | diagnostic "in progress" flag |
+| `[10]` bits | testStatus | `1f` | 5 self-test result bits |
+| `[11]`–`[14]` | probe / preheat / engine / qai | `ff` ×4 | per-test detail (Diagnostic screen) |
+| `[15]` | gtcEnabled | `00` | building management (GTC) |
+| `[16]` | calibration | `01` | |
+| `[17]` | nbPersons / surface | `28` | surface = value × 2 m² (80 m²) |
+| `[18]` | height / flowPerPerson | `32` | |
+| `[19]` | box | `02` | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube |
+| `[20]` | softwareVersion | `64` | `6.4` + `[49]` → `6.4.002` ✓ |
+| `[21]` | elec | `11` | electronic version |
+| `[22:24]` LE | ventilateVolume | `200` | m³ ✓ |
+| `[24]` | preheatType / hasHydro | `01` | electric ✓ |
+| `[25]` | bypass | `00` | real heat-exchanger bypass state |
+| `[26:28]` LE | upTime | `1084` | operating days ✓ |
+| `[28:30]` LE | autonomy | `0` | remaining filter life in days ✓ (max 360) |
+| `[32]` | theoreticalFlow | `09` | ×10 m³/h (older app); newer app uses `[47:49]`/5 ✓ |
+| `[33]` | surventilation | `00` | night boost, inverted ✓ |
+| `[34]` | mode | `01` | speed ✓ |
+| `[35]` | tempElec | `12` | preheat target ✓ |
+| `[36]` | tempHydro | `14` | hydraulic preheat target (unused here) |
+| `[37]` bits | boxDefined | `05` | |
+| `[38]` | tempBlowing | `18` | summer limit ✓ |
+| `[39:43]` LE | date | `0b161db1` | |
+| `[43]` | hollidaysMode | `00` | ✓ |
+| `[44]` | boost | `00` | ✓ |
+| `[45]` | fixedFlow | `00` | fixed air flow mode |
+| `[46]` | timeSlot | `00` | time slots on/off |
+| `[49]` | (version patch) | `02` | |
+| `[50]` | meca | `01` | mechanical version ✓ |
+| `[51]` | season | `02` | 0 summer, 1 winter, 2 intermediate ✓ |
+| `[52]` | turbo_heater | `00` | "turbo heat: No" ✓ |
+| `[53]` | (newer app) | `01` | preheat button state, register `0x2f` ✓ |
 
 ## Ce qui reste à faire
 

@@ -92,6 +92,9 @@ class ParseNotificationTests(unittest.TestCase):
                 "summer_limit": 0,
                 "preheat_target": 0,
                 "air_flow": 0,
+                "filter_days": 0,
+                "season": "ete",
+                "software_version": "0.0.000",
             },
         )
 
@@ -110,6 +113,9 @@ class ParseNotificationTests(unittest.TestCase):
         self.assertEqual(parsed["summer_limit"], 24)
         self.assertEqual(parsed["preheat_target"], 18)
         self.assertEqual(parsed["air_flow"], 90)  # app: "Theoretical air flow 90 m3/h"
+        self.assertEqual(parsed["filter_days"], 0)  # app: "Filter life : 0 days"
+        self.assertEqual(parsed["season"], "intermediaire")  # app: "Season : Intermediate"
+        self.assertEqual(parsed["software_version"], "6.4.002")  # app: "6.4.002"
 
     def test_preheat_disabled_frame(self) -> None:
         # Captured 2026-10-27 right after choosing "no preheating" in the app.
