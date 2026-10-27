@@ -34,10 +34,8 @@ SWITCHES: tuple[VmiPlusSwitchEntityDescription, ...] = (
         is_on_fn=lambda status: status.boost,
         set_fn=lambda client, on: client.set_boost(on),
     ),
-    # Key kept as "bypass" so the unique ID of earlier versions does not change:
-    # register 0x2f turned out to be the app's preheat button.
     VmiPlusSwitchEntityDescription(
-        key="bypass",
+        key="preheat",
         translation_key="preheat",
         is_on_fn=lambda status: status.preheat,
         set_fn=lambda client, on: client.set_preheat(on),

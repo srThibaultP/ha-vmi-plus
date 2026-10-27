@@ -85,20 +85,30 @@ async def test_unavailable_then_back(
     ]
 
 
-async def test_old_connection_switch_removed(
+async def test_migration_from_earlier_versions(
     hass: HomeAssistant,
     entity_registry: er.EntityRegistry,
     mock_entry: MockConfigEntry,
     mock_client: MagicMock,
     mock_ble_device: MagicMock,
 ) -> None:
-    """The "Bluetooth connection" switch of earlier versions is cleaned up."""
+    """Entities of earlier versions are cleaned up or migrated."""
     mock_entry.add_to_hass(hass)
     old = entity_registry.async_get_or_create(
         Platform.SWITCH, DOMAIN, f"{ADDRESS}_connection_enabled", config_entry=mock_entry
     )
+    preheat = entity_registry.async_get_or_create(
+        Platform.SWITCH,
+        DOMAIN,
+        f"{ADDRESS}_bypass",
+        config_entry=mock_entry,
+        suggested_object_id="urban_bypass",
+    )
     assert await hass.config_entries.async_setup(mock_entry.entry_id)
     assert entity_registry.async_get(old.entity_id) is None
+    migrated = entity_registry.async_get(preheat.entity_id)
+    assert migrated is not None
+    assert migrated.unique_id == f"{ADDRESS}_preheat"
 
 
 async def test_ble_device_follows_adapter(

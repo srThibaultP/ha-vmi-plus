@@ -74,7 +74,7 @@ async def test_unique_ids_unchanged(
     }
     assert {
         "speed",
-        "bypass",
+        "preheat",
         "night_boost",
         "summer_limit",
         "remote_temperature",

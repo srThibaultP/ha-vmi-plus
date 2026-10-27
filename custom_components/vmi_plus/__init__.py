@@ -64,6 +64,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: VmiPlusConfigEntry) -> b
         Platform.SWITCH, DOMAIN, f"{address}_connection_enabled"
     ):
         registry.async_remove(old)
+    # Before v0.8.0 the preheat switch was keyed "bypass"; the entity ID is kept.
+    if preheat := registry.async_get_entity_id(Platform.SWITCH, DOMAIN, f"{address}_bypass"):
+        registry.async_update_entity(preheat, new_unique_id=f"{address}_preheat")
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
