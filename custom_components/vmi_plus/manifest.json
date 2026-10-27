@@ -1,17 +1,22 @@
 {
   "domain": "vmi_plus",
   "name": "VMI+ (Ventilairsec)",
-  "codeowners": ["@srThibaultP"],
-  "config_flow": true,
   "bluetooth": [
     {
+      "connectable": true,
       "service_uuid": "0003cbbb-0000-1000-8000-00805f9b0131"
     }
   ],
-  "dependencies": ["bluetooth"],
+  "codeowners": ["@srThibaultP"],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/srThibaultP/ha-vmi-plus",
-  "issue_tracker": "https://github.com/srThibaultP/ha-vmi-plus/issues",
+  "integration_type": "device",
   "iot_class": "local_polling",
-  "requirements": ["bleak-retry-connector>=3.0.0"],
-  "version": "0.7.0"
+  "issue_tracker": "https://github.com/srThibaultP/ha-vmi-plus/issues",
+  "loggers": ["vmi_plus_ble"],
+  "requirements": [
+    "vmi-plus-ble @ git+https://github.com/srThibaultP/vmi-plus-ble@7788444fc48f10a447c70b5875bee547825faad3"
+  ],
+  "version": "0.8.0"
 }

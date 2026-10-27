@@ -1,37 +1,172 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
-        "title": "Connexion à une centrale de ventilation VMI+",
-        "description": "Choisissez la centrale détectée, ou saisissez son adresse MAC Bluetooth manuellement.",
+        "description": "Choisis la centrale à configurer.",
         "data": {
-          "address": "Adresse"
+          "address": "Centrale"
+        },
+        "data_description": {
+          "address": "Centrales à portée d'un adaptateur ou d'un proxy Bluetooth de Home Assistant."
         }
       },
-      "confirm": {
-        "title": "Connecter cette centrale VMI+ ?",
-        "description": "Voulez-vous configurer cette centrale de ventilation VMI+ ?"
+      "bluetooth_confirm": {
+        "description": "Veux-tu configurer {name} ?"
       }
     },
     "error": {
-      "cannot_connect": "Impossible de se connecter à la centrale en Bluetooth. Vérifiez qu'elle est alimentée, à portée, et qu'elle n'est pas déjà connectée à l'app VMI+ officielle."
+      "cannot_connect": "La centrale ne répond pas. Ferme l'app officielle VMI+ (la centrale n'accepte qu'une connexion à la fois) et réessaie."
     },
     "abort": {
-      "cannot_connect": "Impossible de se connecter à la centrale en Bluetooth. Vérifiez qu'elle est alimentée, à portée, et qu'elle n'est pas déjà connectée à l'app VMI+ officielle."
+      "already_configured": "L'appareil est déjà configuré",
+      "no_devices_found": "Aucune centrale VMI+ à portée"
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "bypass": {
+        "name": "Bypass échangeur"
+      },
+      "self_test": {
+        "name": "Autotest"
+      },
+      "turbo_heater": {
+        "name": "Turbo chauffage"
+      },
+      "gtc": {
+        "name": "GTC"
+      },
+      "action_in_progress": {
+        "name": "Action en cours"
+      }
+    },
+    "button": {
+      "locate": {
+        "name": "Localiser (LED)"
+      },
+      "new_filter_6": {
+        "name": "Filtre changé (6 mois)"
+      },
+      "new_filter_12": {
+        "name": "Filtre changé (12 mois)"
+      }
+    },
+    "number": {
+      "summer_limit": {
+        "name": "Limite température été"
+      },
+      "preheat_target": {
+        "name": "Température de préchauffage"
+      }
+    },
+    "select": {
+      "speed": {
+        "name": "Vitesse",
+        "state": {
+          "low": "Faible",
+          "medium": "Moyenne",
+          "high": "Forte"
+        }
+      }
+    },
+    "sensor": {
+      "room_temperature": {
+        "name": "Température pièce"
+      },
+      "room_humidity": {
+        "name": "Humidité pièce"
+      },
+      "probe_temperature": {
+        "name": "Température sonde interne"
+      },
+      "probe_humidity": {
+        "name": "Humidité sonde interne"
+      },
+      "filter_days": {
+        "name": "Autonomie filtre"
+      },
+      "air_flow": {
+        "name": "Débit théorique"
+      },
+      "season": {
+        "name": "Saison",
+        "state": {
+          "summer": "Été",
+          "winter": "Hiver",
+          "intermediate": "Mi-saison"
+        }
+      },
+      "operating_days": {
+        "name": "Jours de fonctionnement"
+      },
+      "software_version": {
+        "name": "Version logicielle"
+      },
+      "volume": {
+        "name": "Volume à ventiler"
+      },
+      "surface": {
+        "name": "Surface"
+      },
+      "preheat_type": {
+        "name": "Type de préchauffage",
+        "state": {
+          "electric": "Électrique",
+          "solar": "Solaire",
+          "smart": "Smart",
+          "smart_partner": "Smart partner",
+          "partner": "Partner"
+        }
+      },
+      "bypass_position": {
+        "name": "Position bypass"
+      },
+      "bypass_temperature": {
+        "name": "Température bypass"
+      },
+      "paired_sensors": {
+        "name": "Capteurs associés"
+      }
+    },
+    "switch": {
+      "boost": {
+        "name": "Boost"
+      },
+      "preheat": {
+        "name": "Préchauffage"
+      },
+      "holiday": {
+        "name": "Holiday"
+      },
+      "night_boost": {
+        "name": "Mode nuit"
+      },
+      "fixed_flow": {
+        "name": "Débit fixe (radon)"
+      },
+      "time_slots": {
+        "name": "Plages horaires"
+      }
+    }
+  },
+  "exceptions": {
+    "device_not_found": "La centrale VMI+ {address} n'est à portée d'aucun adaptateur ou proxy Bluetooth",
+    "update_failed": "Impossible de lire la centrale VMI+ : {error}",
+    "command_failed": "La centrale VMI+ n'a pas accepté la commande : {error}"
   },
   "services": {
     "set_day_schedule": {
       "name": "Programmer une journée",
-      "description": "Programme une journée des plages horaires de la VMI+ (5 plages max). Une liste vide efface la journée.",
+      "description": "Programme une journée des plages horaires d'une centrale VMI+.",
       "fields": {
         "day": {
           "name": "Jour",
-          "description": "1 = lundi ... 7 = dimanche."
+          "description": "Jour à programmer, 1 = lundi … 7 = dimanche."
         },
         "slots": {
           "name": "Plages",
-          "description": "Liste de {start: heure 0-23, speed: Faible/Moyenne/Forte, temp: préchauffage °C optionnel}."
+          "description": "Jusqu'à 5 plages : heure de début (0-23), vitesse (low, medium, high) et température de préchauffage facultative (12-18 °C, 0 = sans). Sans plage, la journée est effacée."
         }
       }
     }

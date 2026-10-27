@@ -1,69 +1,21 @@
-"""Constantes pour l'intégration VMI+ (Ventilairsec)."""
+"""Constants of the VMI+ integration."""
+
+from __future__ import annotations
+
+from datetime import timedelta
 
 DOMAIN = "vmi_plus"
 MANUFACTURER = "Ventilairsec"
-MODEL = "VMCI"
 
-# UUID vérifiés par capture BLE réelle contre une centrale VMCI "Urban".
-# Voir PROTOCOL.md à la racine du dépôt pour le détail de la rétro-ingénierie.
-SERVICE_CONTROL_UUID = "0003cbbb-0000-1000-8000-00805f9b0131"
-CHAR_CONTROL_UUID = "0003cbb1-0000-1000-8000-00805f9b0131"
-SERVICE_TELEMETRY_UUID = "0003cab5-0000-1000-8000-00805f9b0131"
-CHAR_TELEMETRY_UUID = "0003caa2-0000-1000-8000-00805f9b0131"
+# The unit pushes nothing on its own: its state is read every 10 seconds so that
+# changes made with the remote control or the official app show up quickly.
+UPDATE_INTERVAL = timedelta(seconds=10)
+# The bypass state changes slowly: read it once a minute.
+BYPASS_EVERY = 6
 
-REG_SPEED = 0x18
-REG_BOOST = 0x19
-REG_BYPASS = 0x2F
-# Mode nuit (Night ventilation boost, écran Special modes). Ne prend PAS de
-# valeur explicite comme les autres registres : chaque écriture (toujours
-# valeur 0x00) bascule l'état courant plutôt que de l'imposer — confirmé par
-# 3 bascules réelles indépendantes (A→B→A à chaque fois), voir PROTOCOL.md.
-REG_NIGHT_BOOST_TOGGLE = 0x0B
-# Holiday mode (écran Special modes). OFF (0x00) et ON (0x01) confirmés par
-# capture BLE réelle. Le nombre de jours saisi dans l'app n'est jamais transmis
-# en BLE (vérifié : une seule trame d'écriture, juste le registre) — c'est une
-# donnée purement locale à l'app, sans effet sur la centrale — voir PROTOCOL.md.
-REG_HOLIDAY = 0x1A
-# Summer supply-air limit in °C ("Simplified configuration -> During the
-# summer"), value = temperature. Confirmed 2026-10-27 by changing it 24 -> 26 ->
-# 24 in the app (frames a5b6100605170000001a1e / ...18...): status offset 38.
-REG_SUMMER_LIMIT = 0x17
-SUMMER_LIMIT_MIN = 22  # range offered by the app's drop-down
-SUMMER_LIMIT_MAX = 35
-# Preheat target in °C ("Simplified configuration -> During the winter"), 0 =
-# no preheating. Confirmed 2026-10-27 (18 -> 16 -> 0 -> 12 -> 18): status
-# offset 35. The app offers "Mini" (= 12) to 18 °C.
-REG_PREHEAT_TARGET = 0x1C
-PREHEAT_TARGET_MIN = 12
-PREHEAT_TARGET_MAX = 18
-
-# Fixed air flow ("radon") mode, special modes screen: 1 = on, 0 = off.
-# Status offset 45. Verified on the device 2026-10-27 (on then off).
-REG_FIXED_FLOW = 0x1B
-# Time slots on/off: 1 = on, 0 = off. Status offset 46; the unit answers with
-# a TimeSlotState frame (0x05). Turning it on applies the schedule right away
-# (with an empty schedule the unit went to Faible). Verified 2026-10-27.
-REG_TIME_SLOTS = 0x1D
-# "Localisation": makes the unit's LED blink to find it (app: find my device).
-REG_LOCATE = 0x02
-# "NewFilter": tells the unit a new filter was fitted, value = lifespan in
-# months (6 or 12, the two choices of the app). Resets the filter counter.
-REG_NEW_FILTER = 0x05
-FILTER_LIFESPANS = (6, 12)
-# "ByPass": read request, the unit answers with a ByPassState frame (0x18).
-POLL_REG_BYPASS = 0x14
-POLL_BYPASS_EVERY = 6  # polls, i.e. once a minute
-
-# L'app officielle ne nomme les 3 vitesses que "mode 1/2/3" (débit théorique en
-# m3/h configuré par l'installateur, propre à chaque centrale) — aucun nom
-# universel côté Ventilairsec. On utilise Faible/Moyenne/Forte, plus parlant
-# dans Home Assistant, tout en évitant "Boost" (déjà pris par switch.*_boost).
-SPEED_OPTIONS = {"Faible": 0x00, "Moyenne": 0x01, "Forte": 0x02}
-
-# Registres de lecture : l'écriture ne fait que déclencher une notification de
-# télémétrie (types 0x01/0x02/0x03, voir protocol.py et PROTOCOL.md), elle ne
-# modifie aucun état de la centrale.
-POLL_REG_STATUS = 0x03  # -> notification type 0x01 (vitesse/boost/bypass/RPM)
-POLL_REG_REMOTE = 0x06  # -> notification type 0x02 (sonde télécommande/pièce)
-POLL_REG_PROBE = 0x07  # -> notification type 0x03 (sonde interne "Probe N°1")
-POLL_INTERVAL_SECONDS = 10
+SERVICE_SET_DAY_SCHEDULE = "set_day_schedule"
+ATTR_DAY = "day"
+ATTR_SLOTS = "slots"
+ATTR_START = "start"
+ATTR_SPEED = "speed"
+ATTR_TEMPERATURE = "temperature"

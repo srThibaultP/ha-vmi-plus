@@ -1,18 +1,17 @@
-"""Sensors température/humidité des deux sondes de la centrale VMI+.
+"""Sensors of the VMI+ unit."""
 
-Alimentés par le canal de télémétrie (notifications BLE), déclenché par un
-polling périodique — voir device.py et PROTOCOL.md.
-"""
 from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
+    SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    CONF_ADDRESS,
     PERCENTAGE,
     EntityCategory,
     UnitOfArea,
@@ -22,117 +21,186 @@ from homeassistant.const import (
     UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.typing import StateType
+from vmi_plus_ble import VmiPlusState
+from vmi_plus_ble.const import PREHEAT_TYPES, SEASONS
 
-from .device import VmiPlusDevice
-from .protocol import PREHEAT_TYPES, SEASONS
+from .coordinator import VmiPlusConfigEntry, VmiPlusCoordinator
 from .entity import VmiPlusEntity
 
 PARALLEL_UPDATES = 0
 
 
+@dataclass(frozen=True, kw_only=True)
+class VmiPlusSensorEntityDescription(SensorEntityDescription):
+    """Sensor computed from the decoded frames; None when not read yet."""
+
+    value_fn: Callable[[VmiPlusState], StateType]
+
+
+def _status[T](getter: Callable[..., T]) -> Callable[[VmiPlusState], T | None]:
+    return lambda state: getter(state.status) if state.status else None
+
+
+def _probe(state: VmiPlusState, field: str) -> int | None:
+    probe = state.probes.main if state.probes else None
+    return getattr(probe, field) if probe else None
+
+
+def _remote(state: VmiPlusState, field: str) -> int | None:
+    remote = state.sensors.remote_control if state.sensors else None
+    return getattr(remote, field) if remote else None
+
+
+SENSORS: tuple[VmiPlusSensorEntityDescription, ...] = (
+    VmiPlusSensorEntityDescription(
+        key="remote_temperature",
+        translation_key="room_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda state: _remote(state, "temperature"),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="remote_humidity",
+        translation_key="room_humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda state: _remote(state, "humidity"),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="probe_temperature",
+        translation_key="probe_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda state: _probe(state, "temperature"),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="probe_humidity",
+        translation_key="probe_humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda state: _probe(state, "humidity"),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_filter_days",
+        translation_key="filter_days",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        value_fn=_status(lambda status: status.filter_days),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_air_flow",
+        translation_key="air_flow",
+        device_class=SensorDeviceClass.VOLUME_FLOW_RATE,
+        native_unit_of_measurement=UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_status(lambda status: status.air_flow),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_season",
+        translation_key="season",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(SEASONS.values()),
+        value_fn=_status(lambda status: status.season),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_operating_days",
+        translation_key="operating_days",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_status(lambda status: status.operating_days),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_software_version",
+        translation_key="software_version",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_status(lambda status: status.software_version),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_volume",
+        translation_key="volume",
+        device_class=SensorDeviceClass.VOLUME,
+        native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_status(lambda status: status.volume),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_surface",
+        translation_key="surface",
+        device_class=SensorDeviceClass.AREA,
+        native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_status(lambda status: status.surface),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="status_preheat_type",
+        translation_key="preheat_type",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(PREHEAT_TYPES.values()),
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_status(lambda status: status.preheat_type),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="bypass_state_position",
+        translation_key="bypass_position",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: state.bypass.position if state.bypass else None,
+    ),
+    VmiPlusSensorEntityDescription(
+        key="bypass_state_temperature",
+        translation_key="bypass_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda state: state.bypass.temperature if state.bypass else None,
+    ),
+    VmiPlusSensorEntityDescription(
+        key="sensors",
+        translation_key="paired_sensors",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: len(state.sensors.sensors) if state.sensors else None,
+    ),
+)
+
+
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: VmiPlusConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    device: VmiPlusDevice = entry.runtime_data
-    async_add_entities(
-        [
-            VmiPlusSensor(device, entry, "probe", "temperature", "Température sonde interne",
-                           SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS),
-            VmiPlusSensor(device, entry, "probe", "humidity", "Humidité sonde interne",
-                           SensorDeviceClass.HUMIDITY, PERCENTAGE),
-            VmiPlusSensor(device, entry, "remote", "temperature", "Température pièce",
-                           SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS),
-            VmiPlusSensor(device, entry, "remote", "humidity", "Humidité pièce",
-                           SensorDeviceClass.HUMIDITY, PERCENTAGE),
-            VmiPlusSensor(device, entry, "status", "operating_days", "Jours de fonctionnement",
-                           SensorDeviceClass.DURATION, UnitOfTime.DAYS,
-                           SensorStateClass.TOTAL_INCREASING, EntityCategory.DIAGNOSTIC),
-            VmiPlusSensor(device, entry, "status", "air_flow", "Débit théorique",
-                           SensorDeviceClass.VOLUME_FLOW_RATE,
-                           UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR),
-            VmiPlusSensor(device, entry, "status", "filter_days", "Autonomie filtre",
-                           SensorDeviceClass.DURATION, UnitOfTime.DAYS),
-            VmiPlusSensor(device, entry, "status", "season", "Saison",
-                           SensorDeviceClass.ENUM, None, None, None, list(SEASONS.values())),
-            VmiPlusSensor(device, entry, "status", "software_version", "Version logicielle",
-                           None, None, None, EntityCategory.DIAGNOSTIC),
-            # Installer settings shown by the app's "Equipment life" screen.
-            VmiPlusSensor(device, entry, "status", "volume", "Volume à ventiler",
-                           SensorDeviceClass.VOLUME, UnitOfVolume.CUBIC_METERS,
-                           None, EntityCategory.DIAGNOSTIC),
-            VmiPlusSensor(device, entry, "status", "surface", "Surface",
-                           SensorDeviceClass.AREA, UnitOfArea.SQUARE_METERS,
-                           None, EntityCategory.DIAGNOSTIC),
-            VmiPlusSensor(device, entry, "status", "preheat_type", "Type de préchauffage",
-                           SensorDeviceClass.ENUM, None, None, EntityCategory.DIAGNOSTIC,
-                           list(PREHEAT_TYPES.values())),
-            VmiPlusSensor(device, entry, "bypass_state", "position", "Position bypass",
-                           None, PERCENTAGE, SensorStateClass.MEASUREMENT, EntityCategory.DIAGNOSTIC),
-            VmiPlusSensorsListSensor(device, entry),
-        ]
-    )
-    device.start_polling()
+    """Adds the sensors."""
+    coordinator = entry.runtime_data
+    async_add_entities(VmiPlusSensor(coordinator, description) for description in SENSORS)
 
 
 class VmiPlusSensor(VmiPlusEntity, SensorEntity):
+    """Sensor backed by a decoded frame."""
+
+    entity_description: VmiPlusSensorEntityDescription
+
     def __init__(
-        self,
-        device: VmiPlusDevice,
-        entry: ConfigEntry,
-        telemetry_type: str,
-        field: str,
-        name: str,
-        device_class: SensorDeviceClass | None,
-        unit: str | None,
-        state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT,
-        entity_category: EntityCategory | None = None,
-        options: list[str] | None = None,
+        self, coordinator: VmiPlusCoordinator, description: VmiPlusSensorEntityDescription
     ) -> None:
-        super().__init__(device, entry)
-        self._telemetry_type = telemetry_type
-        self._field = field
-        self._attr_name = name
-        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{telemetry_type}_{field}"
-        self._attr_device_class = device_class
-        self._attr_native_unit_of_measurement = unit
-        self._attr_state_class = state_class
-        self._attr_entity_category = entity_category
-        self._attr_options = options
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
 
-    async def async_added_to_hass(self) -> None:
-        self.async_on_remove(self._device.add_update_listener(self._on_update))
-        self._on_update()
-
-    def _on_update(self) -> None:
-        data = self._device.telemetry.get(self._telemetry_type)
-        if data is not None and self._field in data:
-            self._attr_native_value = data[self._field]
-            self.async_write_ha_state()
-
-
-class VmiPlusSensorsListSensor(VmiPlusEntity, SensorEntity):
-    """Number of wireless sensors paired with the unit ("Sensor management").
-
-    The attributes list each sensor (id, room, kind and readings) as decoded
-    from the SensorsState frame (0x02), see PROTOCOL.md.
-    """
-
-    _attr_name = "Capteurs associés"
-    _attr_icon = "mdi:access-point-network"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
-        super().__init__(device, entry)
-        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_sensors"
-
-    async def async_added_to_hass(self) -> None:
-        self.async_on_remove(self._device.add_update_listener(self._on_update))
-        self._on_update()
-
-    def _on_update(self) -> None:
-        data = self._device.telemetry.get("remote")
-        if data is not None and "sensors" in data:
-            self._attr_native_value = len(data["sensors"])
-            self._attr_extra_state_attributes = {"sensors": data["sensors"]}
-            self.async_write_ha_state()
+    @property
+    def native_value(self) -> StateType:
+        """Value read from the unit."""
+        return self.entity_description.value_fn(self.coordinator.data)
