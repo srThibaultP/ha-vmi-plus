@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS, PERCENTAGE, UnitOfTemperature
+from homeassistant.const import CONF_ADDRESS, PERCENTAGE, EntityCategory, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -35,14 +35,15 @@ async def async_setup_entry(
                            SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS),
             VmiPlusSensor(device, entry, "remote", "humidity", "Humidité pièce",
                            SensorDeviceClass.HUMIDITY, PERCENTAGE),
+            VmiPlusSensor(device, entry, "status", "operating_days", "Jours de fonctionnement",
+                           SensorDeviceClass.DURATION, UnitOfTime.DAYS,
+                           SensorStateClass.TOTAL_INCREASING, EntityCategory.DIAGNOSTIC),
         ]
     )
     device.start_polling()
 
 
 class VmiPlusSensor(VmiPlusEntity, SensorEntity):
-    _attr_state_class = SensorStateClass.MEASUREMENT
-
     def __init__(
         self,
         device: VmiPlusDevice,
@@ -52,6 +53,8 @@ class VmiPlusSensor(VmiPlusEntity, SensorEntity):
         name: str,
         device_class: SensorDeviceClass,
         unit: str,
+        state_class: SensorStateClass = SensorStateClass.MEASUREMENT,
+        entity_category: EntityCategory | None = None,
     ) -> None:
         super().__init__(device, entry)
         self._telemetry_type = telemetry_type
@@ -60,6 +63,8 @@ class VmiPlusSensor(VmiPlusEntity, SensorEntity):
         self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{telemetry_type}_{field}"
         self._attr_device_class = device_class
         self._attr_native_unit_of_measurement = unit
+        self._attr_state_class = state_class
+        self._attr_entity_category = entity_category
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(self._device.add_update_listener(self._on_update))

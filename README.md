@@ -68,6 +68,8 @@ développement → États) :
   `_humidite_sonde_interne`) — sonde interne (ex. sortie résistance de préchauffage)
 - **Température/Humidité pièce** (`sensor`, suffixes `_temperature_piece` / `_humidite_piece`)
   — sonde télécommande de la pièce ventilée (ex. salle de bain)
+- **Jours de fonctionnement** (`sensor`, suffix `_jours_de_fonctionnement`, diagnostic) —
+  operating days counter, same value as the app's "Equipment life" screen.
 - **Mode nuit** (`switch`, suffixe `_mode_nuit`) — "Night ventilation boost" (sur-ventilation
   nocturne gratuite été/préchauffage passif hiver). ⚠️ Registre à bascule (pas de valeur
   explicite ON/OFF comme les autres switches, voir PROTOCOL.md) : cette entité ne bascule que

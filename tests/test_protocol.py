@@ -88,8 +88,22 @@ class ParseNotificationTests(unittest.TestCase):
                 "holiday": True,
                 "boost": True,
                 "bypass": True,
+                "operating_days": 0,
             },
         )
+
+    def test_status_frame_real_capture_operating_days(self) -> None:
+        # Real frame captured 2026-10-27 (app showed "Operating days : 1084",
+        # speed Moyenne, night boost on, bypass on).
+        frame = bytes.fromhex(
+            "a5b601063729013122001fffffffff00012832026411c80001003c04000000"
+            "0009000112140518b11d160b00000000c20102010200013400100b0000c7"
+        )
+        parsed = protocol.parse_notification(frame)
+        self.assertEqual(parsed["operating_days"], 1084)
+        self.assertEqual(parsed["speed"], 0x01)
+        self.assertTrue(parsed["night_boost"])
+        self.assertTrue(parsed["bypass"])
 
     def test_status_frame_too_short_returns_none(self) -> None:
         frame = bytes([0xA5, 0xB6, 0x01] + [0] * 40)  # < 54 octets

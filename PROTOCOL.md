@@ -162,6 +162,29 @@ Maintenance → Available info → Diagnostic affiche 4 autotests (IAQ Sensor, M
 
 Chaîne trouvée dans le binaire de l'app, dont le rôle n'était pas clair au départ. Confirmé par recherche externe : **"Vision'R" est le nom commercial du système de gestion/pilotage** que Ventilairsec utilise pour ses gammes **Urban** et **Cube** (cf. "Gestion Urban et Cube Vision'R avec boîtier" sur la boutique officielle) — ce n'est pas un modèle d'appareil distinct. La centrale "Urban" de l'utilisateur *est* un système Vision'R : aucune intégration ni registre séparé n'est donc nécessaire, `vmi_plus` la couvre déjà.
 
+## 2026-10-27 capture (app v3.23.19, firmware 6.4.002)
+
+New capture (phone HCI snoop + direct reads from a Raspberry Pi with bleak), reading the app's
+"Equipment life" screen side by side with the raw frames:
+
+- **Equipment life values do come from the type `0x01` status frame**, not from a one-time cached
+  read. Opening that screen sends no extra register write. Confirmed offset:
+  - `[26:28]` little-endian uint16 = **operating days** (`3c 04` = 1084, exact match with the app).
+    Exposed as `sensor.*_jours_de_fonctionnement`.
+- Candidate offsets (single-byte matches, not yet confirmed by a diff):
+  - `[22]` = `0xc8` = 200 → "Volume to ventilate : 200 m³".
+  - `[38]` = `0x18` = 24 → "Max. supply air temp. : 24 °C".
+  - `[28:30]` = `00 00` → maybe "Filter life : 0 days" (the app shows FILTER 0 %, "to be
+    replaced"). Can only be confirmed by capturing before/after a filter RESET.
+- Type `0x02`: `[5:9]` little-endian = remote control serial (`00 9b 24 04` → `04249B00`, matches
+  the app).
+- Write frame `A5 B6 1A 06 06 ...` is **confirmed as a clock sync**: payload
+  `1a 0a 1b 0f 32 01` = 2026-10-27 15:50:01 (`[yy][mm][dd][hh][mm][ss]`), sent at that exact time.
+- The first write of a session is `a5b6100005030000000016` (class `10 00` instead of `10 06`),
+  then the usual `0x2c`, `0x03`, `0x06`, `0x07` polling.
+- Maintenance → History does not read anything over BLE: it asks for an e-mail address and the
+  history is sent by the vendor's cloud.
+
 ## Ce qui reste à faire
 
 1. ~~Confirmer la sémantique d'écriture du registre `0x0b`~~ → confirmé bascule (toggle), voir type `0x01` ci-dessus. Exposé en `switch` avec écriture conditionnelle (ne bascule que si l'état diffère de l'état demandé).

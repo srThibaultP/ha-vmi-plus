@@ -48,6 +48,9 @@ def parse_notification(data: bytes) -> dict | None:
             "holiday": data[43] == 0x01,
             "boost": data[44] == 0x01,
             "bypass": data[53] == 0x01,
+            # Little-endian uint16, matches the app's "Equipment life ->
+            # Operating days" (1084 = 0x043C on the 2026-10-27 capture).
+            "operating_days": int.from_bytes(data[26:28], "little"),
         }
 
     if frame_type == 0x03 and len(data) >= 9:
