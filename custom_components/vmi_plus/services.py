@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import voluptuous as vol
-from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+from typing import Any
+
+import probatio
+from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import service
 from vmi_plus_ble.const import (
     NO_SLOT_TEMPERATURE,
@@ -26,20 +27,23 @@ from .const import (
 )
 from .select import SPEEDS
 
-SET_DAY_SCHEDULE_SCHEMA = {
-    vol.Required(ATTR_DAY): vol.All(vol.Coerce(int), vol.Range(min=1, max=7)),
-    vol.Optional(ATTR_SLOTS, default=[]): vol.All(
-        cv.ensure_list,
-        vol.Length(max=TIME_SLOTS_PER_DAY),
+SET_DAY_SCHEDULE_SCHEMA: dict[str | probatio.Marker, Any] = {
+    probatio.Required(ATTR_DAY): probatio.All(probatio.Coerce(int), probatio.Range(min=1, max=7)),
+    probatio.Optional(ATTR_SLOTS, default=[]): probatio.All(
+        probatio.EnsureList(),
+        probatio.Length(max=TIME_SLOTS_PER_DAY),
         [
             {
-                vol.Required(ATTR_START): vol.All(vol.Coerce(int), vol.Range(min=0, max=23)),
-                vol.Required(ATTR_SPEED): vol.In(list(SPEEDS)),
-                vol.Optional(ATTR_TEMPERATURE, default=NO_SLOT_TEMPERATURE): vol.Any(
-                    vol.All(
-                        vol.Coerce(int), vol.Range(min=PREHEAT_TARGET_MIN, max=PREHEAT_TARGET_MAX)
+                probatio.Required(ATTR_START): probatio.All(
+                    probatio.Coerce(int), probatio.Range(min=0, max=23)
+                ),
+                probatio.Required(ATTR_SPEED): probatio.In(list(SPEEDS)),
+                probatio.Optional(ATTR_TEMPERATURE, default=NO_SLOT_TEMPERATURE): probatio.Any(
+                    probatio.All(
+                        probatio.Coerce(int),
+                        probatio.Range(min=PREHEAT_TARGET_MIN, max=PREHEAT_TARGET_MAX),
                     ),
-                    vol.In([PREHEAT_OFF, NO_SLOT_TEMPERATURE]),
+                    probatio.In([PREHEAT_OFF, NO_SLOT_TEMPERATURE]),
                 ),
             }
         ],

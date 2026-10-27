@@ -79,4 +79,4 @@ rules:
   inject-websession:
     status: exempt
     comment: Bluetooth only, no HTTP.
-  strict-typing: todo
+  strict-typing: done
