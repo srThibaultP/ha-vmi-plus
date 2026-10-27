@@ -301,6 +301,10 @@ Unit → app: `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓,
 | `[52]` | turbo_heater | `00` | "turbo heat: No" ✓ |
 | `[53]` | (newer app) | `01` | preheat button state, register `0x2f` ✓ |
 
+Since v0.7.0, `[22:24]` (volume), `[17]` (surface), `[24]` (preheat type), `[52]` (turbo heat),
+`[15]` (GTC) and `[9]` (action in progress) are also exposed in Home Assistant as diagnostic
+entities.
+
 ### Generic frame format
 
 Every frame in both directions is `A5 B6 [class] 06 [len] [payload…] [crc]`, with the same CRC as

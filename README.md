@@ -69,6 +69,9 @@ named "Urban"; check Developer tools → States). Every app feature maps to one 
 | Equipment life: operating days | Jours de fonctionnement | `sensor` | status `[26:28]` |
 | Equipment life: season | Saison | `sensor` | status `[51]` |
 | Equipment life: housing, serial, versions | device info (model, serial number, firmware, hardware) + Version logicielle | device / `sensor` | status `[5:9]`, `[19]`, `[20]`, `[21]`, `[49]`, `[50]` |
+| Equipment life: volume to ventilate, surface, preheat type | Volume à ventiler (m³) / Surface (m²) / Type de préchauffage | `sensor` (diagnostic) | status `[22:24]`, `[17]` × 2, `[24]` |
+| Equipment life: turbo heat, building management (GTC) | Turbo chauffage / GTC | `binary_sensor` (diagnostic) | status `[52]`, `[15]` |
+| (not shown by the app) locate / action running | Action en cours | `binary_sensor` (diagnostic) | status `[9]` |
 | Instantaneous measurements: internal probe | Température / Humidité sonde interne | `sensor` | ProbesState `0x03` |
 | Diagnostic | Autotest (problem) | `binary_sensor` | status `[10]`–`[14]` |
 | Sensor management | Capteurs associés (list as attributes) | `sensor` | SensorsState `0x02` |

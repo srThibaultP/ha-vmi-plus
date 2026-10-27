@@ -15,15 +15,17 @@ from homeassistant.const import (
     CONF_ADDRESS,
     PERCENTAGE,
     EntityCategory,
+    UnitOfArea,
     UnitOfTemperature,
     UnitOfTime,
+    UnitOfVolume,
     UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .device import VmiPlusDevice
-from .protocol import SEASONS
+from .protocol import PREHEAT_TYPES, SEASONS
 from .entity import VmiPlusEntity
 
 PARALLEL_UPDATES = 0
@@ -55,6 +57,16 @@ async def async_setup_entry(
                            SensorDeviceClass.ENUM, None, None, None, list(SEASONS.values())),
             VmiPlusSensor(device, entry, "status", "software_version", "Version logicielle",
                            None, None, None, EntityCategory.DIAGNOSTIC),
+            # Installer settings shown by the app's "Equipment life" screen.
+            VmiPlusSensor(device, entry, "status", "volume", "Volume à ventiler",
+                           SensorDeviceClass.VOLUME, UnitOfVolume.CUBIC_METERS,
+                           None, EntityCategory.DIAGNOSTIC),
+            VmiPlusSensor(device, entry, "status", "surface", "Surface",
+                           SensorDeviceClass.AREA, UnitOfArea.SQUARE_METERS,
+                           None, EntityCategory.DIAGNOSTIC),
+            VmiPlusSensor(device, entry, "status", "preheat_type", "Type de préchauffage",
+                           SensorDeviceClass.ENUM, None, None, EntityCategory.DIAGNOSTIC,
+                           list(PREHEAT_TYPES.values())),
             VmiPlusSensor(device, entry, "bypass_state", "position", "Position bypass",
                            None, PERCENTAGE, SensorStateClass.MEASUREMENT, EntityCategory.DIAGNOSTIC),
             VmiPlusSensorsListSensor(device, entry),

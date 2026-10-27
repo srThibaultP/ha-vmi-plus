@@ -1,4 +1,4 @@
-"""Binary sensors read from the status frame: heat-exchanger bypass and self-test."""
+"""Binary sensors read from the status frame: heat-exchanger bypass, self-test and flags."""
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
@@ -20,7 +20,17 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     device: VmiPlusDevice = entry.runtime_data
-    async_add_entities([VmiPlusBypassBinarySensor(device, entry), VmiPlusSelfTestBinarySensor(device, entry)])
+    async_add_entities(
+        [
+            VmiPlusBypassBinarySensor(device, entry),
+            VmiPlusSelfTestBinarySensor(device, entry),
+            VmiPlusFlagBinarySensor(device, entry, "turbo_heater", "Turbo chauffage", "mdi:radiator", None),
+            VmiPlusFlagBinarySensor(device, entry, "gtc", "GTC", "mdi:office-building-cog", None),
+            VmiPlusFlagBinarySensor(
+                device, entry, "action_in_progress", "Action en cours", None, BinarySensorDeviceClass.RUNNING
+            ),
+        ]
+    )
 
 
 class _StatusBinarySensor(VmiPlusEntity, BinarySensorEntity):
@@ -78,3 +88,27 @@ class VmiPlusSelfTestBinarySensor(_StatusBinarySensor):
             "bits": f"{data['self_test']:05b}",
             "details": data["self_test_details"],
         }
+
+
+class VmiPlusFlagBinarySensor(_StatusBinarySensor):
+    """Diagnostic flag of the status frame: turbo heater [52], GTC [15], action in progress [9]."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        device: VmiPlusDevice,
+        entry: ConfigEntry,
+        key: str,
+        name: str,
+        icon: str | None,
+        device_class: BinarySensorDeviceClass | None,
+    ) -> None:
+        super().__init__(device, entry, key)
+        self._key = key
+        self._attr_name = name
+        self._attr_icon = icon
+        self._attr_device_class = device_class
+
+    def _update_from_status(self, data: dict) -> None:
+        self._attr_is_on = data[self._key]
