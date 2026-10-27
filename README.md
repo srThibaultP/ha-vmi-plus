@@ -71,6 +71,8 @@ développement → États) :
   — sonde télécommande de la pièce ventilée (ex. salle de bain)
 - **Jours de fonctionnement** (`sensor`, suffix `_jours_de_fonctionnement`, diagnostic) —
   operating days counter, same value as the app's "Equipment life" screen.
+- **Débit théorique** (`sensor`, suffix `_debit_theorique`) — theoretical air flow of the current
+  speed in m³/h, as shown by the app (72/90/110 m³/h on our unit).
 - **Limite température été** (`number`, suffix `_limite_temperature_ete`, config) — the app's
   "During the summer" setting: incoming air flow is limited when it is hotter than this outside
   (22–35 °C).

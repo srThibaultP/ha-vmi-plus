@@ -11,7 +11,14 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS, PERCENTAGE, EntityCategory, UnitOfTemperature, UnitOfTime
+from homeassistant.const import (
+    CONF_ADDRESS,
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfTemperature,
+    UnitOfTime,
+    UnitOfVolumeFlowRate,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -38,6 +45,9 @@ async def async_setup_entry(
             VmiPlusSensor(device, entry, "status", "operating_days", "Jours de fonctionnement",
                            SensorDeviceClass.DURATION, UnitOfTime.DAYS,
                            SensorStateClass.TOTAL_INCREASING, EntityCategory.DIAGNOSTIC),
+            VmiPlusSensor(device, entry, "status", "air_flow", "Débit théorique",
+                           SensorDeviceClass.VOLUME_FLOW_RATE,
+                           UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR),
         ]
     )
     device.start_polling()

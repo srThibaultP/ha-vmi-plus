@@ -194,8 +194,11 @@ New capture (phone HCI snoop + direct reads from a Raspberry Pi with bleak), rea
     (entity_id unchanged).
   - Status `[36]` went `0x14` (18/16 °C) → `0x00` (off, and also at 12 °C). Unknown, maybe the
     current heating demand.
-- Theoretical air flow slider (50 %): could not be moved from adb on a private-customer account, so
-  not tested.
+- The "Theoretical air flow" slider of "Simplified configuration" is a 3-position slider that
+  writes the **speed register `0x18`** (moved by hand to the lowest position: `a5b610060518000000000b`,
+  the app then showed 72 m³/h instead of 90). So status `[47:49]` (360/450/550) is the theoretical
+  air flow in **1/5 m³/h**: 72/90/110 m³/h for Faible/Moyenne/Forte. Exposed as
+  `sensor.*_debit_theorique`. (adb-injected gestures are ignored by this slider.)
 - Opening every Configuration / Maintenance / Sensor management screen sends **no extra read**: the
   app builds all of them from the status frame (`0x01`) and the probe frames. So everything the app
   shows is in those frames.
@@ -207,10 +210,9 @@ New capture (phone HCI snoop + direct reads from a Raspberry Pi with bleak), rea
   |---|---|---|
   | `[5:9]` LE | `0x22310129` | Serial number `MUV2310129` (digits after the leading `2`) |
   | `[6]` | `0x01` | Season "Intermediate" (?) |
-  | `[18]` | `0x32` = 50 | Theoretical air flow slider 50 % (90 m³/h) |
+  | `[18]` | `0x32` = 50 | Unknown (the slider's accessibility label says "50%" whatever its position) |
   | `[22]` | `0xc8` = 200 | Volume to ventilate 200 m³ |
   | `[28:32]` | `00 00 00 00` | Filter life 0 days / FILTER 0 % (filter interval set to 6 months) |
-  | `[47:49]` LE | `0x01c2` = 450 | Changes with the speed (360/450/550), unit unknown |
 - Maintenance → History does not read anything over BLE: it asks for an e-mail address and the
   history is sent by the vendor's cloud.
 

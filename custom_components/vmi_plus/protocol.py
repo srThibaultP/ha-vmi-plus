@@ -55,6 +55,9 @@ def parse_notification(data: bytes) -> dict | None:
             "summer_limit": data[38],
             # Preheat target in °C (0 = no preheating), written with register 0x1c.
             "preheat_target": data[35],
+            # Theoretical air flow of the current speed, little-endian uint16
+            # in 1/5 m³/h (360/450/550 = 72/90/110 m³/h, matches the app).
+            "air_flow": int.from_bytes(data[47:49], "little") / 5,
         }
 
     if frame_type == 0x03 and len(data) >= 9:

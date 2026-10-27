@@ -91,6 +91,7 @@ class ParseNotificationTests(unittest.TestCase):
                 "operating_days": 0,
                 "summer_limit": 0,
                 "preheat_target": 0,
+                "air_flow": 0,
             },
         )
 
@@ -108,6 +109,7 @@ class ParseNotificationTests(unittest.TestCase):
         self.assertTrue(parsed["bypass"])
         self.assertEqual(parsed["summer_limit"], 24)
         self.assertEqual(parsed["preheat_target"], 18)
+        self.assertEqual(parsed["air_flow"], 90)  # app: "Theoretical air flow 90 m3/h"
 
     def test_preheat_disabled_frame(self) -> None:
         # Captured 2026-10-27 right after choosing "no preheating" in the app.
