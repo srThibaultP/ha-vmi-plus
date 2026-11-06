@@ -6,7 +6,7 @@
 # duplicate "views:" line if the editor already has one).
 #
 # Built-in cards only (tile, gauge, grid, entities), nothing to install from
-# HACS.
+# the Marketplace.
 #
 # ⚠️ Adjust the "urban_" prefix of the entity_ids below: Home Assistant builds
 # it from YOUR device name (Settings → Devices → VMI+ → name at the top), not

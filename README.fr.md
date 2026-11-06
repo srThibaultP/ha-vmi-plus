@@ -14,8 +14,10 @@ dans [PROTOCOL.fr.md](PROTOCOL.fr.md).
 
 ## Installation
 
-**HACS :** ajoute ce dépôt comme dépôt personnalisé (catégorie *Intégration*), installe
-« VMI+ (Ventilairsec) », puis redémarre Home Assistant.
+**Marketplace** (Home Assistant 2026.11 et suivants) : Paramètres → Marketplace → *Ajouter depuis un
+lien*, saisis `https://github.com/srThibaultP/ha-vmi-plus`, valide avec *Ajouter* (choisis
+*Intégrations* si le type est demandé), installe « VMI+ (Ventilairsec) », puis redémarre Home
+Assistant. Sur les versions plus anciennes, ajoute le même lien comme dépôt personnalisé dans HACS.
 
 **Manuelle :** copie `custom_components/vmi_plus/` dans le dossier `custom_components/` de ta
 configuration Home Assistant, puis redémarre.
