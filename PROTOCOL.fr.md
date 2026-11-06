@@ -96,7 +96,7 @@ AckData, `0x30` Csv, `0x31` Histo, `0xff` Nack.
 | `0x02` | Localisation | fait clignoter la LED pour trouver la centrale ✓ |
 | `0x03` | State | lecture → trame State ✓ |
 | `0x04` | Update | mise à jour firmware |
-| `0x05` | NewFilter | filtre remplacé, valeur = intervalle en **semaines** : l'app envoie 52 pour 12 mois (364 jours) ; 6 a donné 42 jours et 12 a donné 84 jours. **Remet le compteur filtre à zéro.** |
+| `0x05` | NewFilter | filtre remplacé, valeur = intervalle en **semaines** : l'app envoie 52 pour 12 mois (364 jours) et 26 pour 6 mois (182 jours) ✓ ; 6 a donné 42 jours et 12 a donné 84 jours. **Remet le compteur filtre à zéro.** |
 | `0x06` | Sensors | lecture → SensorsState ✓ |
 | `0x07` | Probes | lecture → ProbesState ✓ |
 | `0x09` / `0x22` / `0x21` / `0x20` | StartCsv / StartCsvV2 / StopCSV / CsvLength | export de l'historique |
@@ -334,10 +334,8 @@ Où regarder dans `out/` :
 
 ## Encore inconnu
 
-1. Confirmer que l'app envoie 26 (semaines) pour 6 mois, et la façon dont elle calcule son pourcentage
-   FILTRE.
-2. Capteurs CO₂ / Nexelec / Nanosense et préchauffage hydraulique ou solaire : décodés depuis le code
+1. Capteurs CO₂ / Nexelec / Nanosense et préchauffage hydraulique ou solaire : décodés depuis le code
    de l'app uniquement.
-3. L'emplacement des codes d'erreur dans les trames.
-4. État `[3]`, `[18]`, `[36]`, `[37]`, `[39:43]`, ByPassState `[11]`, registre `0x2c` et
+2. L'emplacement des codes d'erreur dans les trames.
+3. État `[3]`, `[18]`, `[36]`, `[37]`, `[39:43]`, ByPassState `[11]`, registre `0x2c` et
    notification `0x50`.
