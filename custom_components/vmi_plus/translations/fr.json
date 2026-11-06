@@ -151,9 +151,15 @@
     }
   },
   "exceptions": {
-    "device_not_found": "La centrale VMI+ {address} n'est à portée d'aucun adaptateur ou proxy Bluetooth",
-    "update_failed": "Impossible de lire la centrale VMI+ : {error}",
-    "command_failed": "La centrale VMI+ n'a pas accepté la commande : {error}"
+    "device_not_found": {
+      "message": "La centrale VMI+ {address} n'est à portée d'aucun adaptateur ou proxy Bluetooth"
+    },
+    "update_failed": {
+      "message": "Impossible de lire la centrale VMI+ : {error}"
+    },
+    "command_failed": {
+      "message": "La centrale VMI+ n'a pas accepté la commande : {error}"
+    }
   },
   "services": {
     "set_day_schedule": {

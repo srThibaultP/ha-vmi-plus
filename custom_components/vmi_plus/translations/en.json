@@ -151,9 +151,15 @@
     }
   },
   "exceptions": {
-    "device_not_found": "VMI+ unit {address} is not in range of a Bluetooth adapter or proxy",
-    "update_failed": "Could not read the VMI+ unit: {error}",
-    "command_failed": "The VMI+ unit did not accept the command: {error}"
+    "device_not_found": {
+      "message": "VMI+ unit {address} is not in range of a Bluetooth adapter or proxy"
+    },
+    "update_failed": {
+      "message": "Could not read the VMI+ unit: {error}"
+    },
+    "command_failed": {
+      "message": "The VMI+ unit did not accept the command: {error}"
+    }
   },
   "services": {
     "set_day_schedule": {
