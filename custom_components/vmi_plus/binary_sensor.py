@@ -37,6 +37,7 @@ BINARY_SENSORS: tuple[VmiPlusBinarySensorEntityDescription, ...] = (
         translation_key="self_test",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         is_on_fn=lambda status: not status.self_test_ok,
     ),
     VmiPlusBinarySensorEntityDescription(

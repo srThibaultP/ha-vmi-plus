@@ -41,8 +41,8 @@ Home Assistant (anglais et français fournis).
 | Bouton préchauffage | Préchauffage | `switch` |
 | Mode vacances | Holiday | `switch` |
 | Mode nuit (surventilation nocturne) | Mode nuit | `switch` |
-| Débit fixe (radon) | Débit fixe (radon) | `switch` |
-| Plages horaires on/off, programme de la semaine en attributs | Plages horaires | `switch` |
+| Débit fixe (radon) | Débit fixe (radon) | `switch` (désactivé par défaut) |
+| Plages horaires on/off | Plages horaires | `switch` (désactivé par défaut) |
 | Édition des plages horaires | `vmi_plus.set_day_schedule` | service |
 | Consigne de préchauffage | Température de préchauffage | `number` |
 | Limite de soufflage été | Limite température été | `number` |
@@ -52,21 +52,26 @@ Home Assistant (anglais et français fournis).
 | Débit théorique (m³/h) | Débit théorique | `sensor` |
 | Saison | Saison | `sensor` |
 | Jours de fonctionnement | Jours de fonctionnement | `sensor` (diagnostic) |
-| Version logicielle | Version logicielle | `sensor` (diagnostic) |
-| Volume à ventiler, surface, type de préchauffage | Volume à ventiler / Surface / Type de préchauffage | `sensor` (diagnostic) |
-| Turbo chauffage, gestion technique du bâtiment (GTC), action en cours | Turbo chauffage / GTC / Action en cours | `binary_sensor` (diagnostic) |
-| Capteurs sans fil associés, détail en attributs | Capteurs associés | `sensor` (diagnostic) |
-| Bypass de l'échangeur (+ position, température) | Bypass échangeur / Position bypass / Température bypass | `binary_sensor` / `sensor` |
-| Autotest (écran Diagnostic) | Autotest | `binary_sensor` (problème) |
-| Localiser la centrale | Localiser (LED) | `button` |
+| Version logicielle | Version logicielle | `sensor` (diagnostic, désactivé par défaut) |
+| Volume à ventiler, surface, type de préchauffage | Volume à ventiler / Surface / Type de préchauffage | `sensor` (diagnostic, désactivé par défaut) |
+| Turbo chauffage, gestion technique du bâtiment (GTC), action en cours | Turbo chauffage / GTC / Action en cours | `binary_sensor` (diagnostic, désactivé par défaut) |
+| Nombre de capteurs sans fil associés | Capteurs associés | `sensor` (diagnostic, désactivé par défaut) |
+| Bypass de l'échangeur (+ position, température) | Bypass échangeur / Position bypass / Température bypass | `binary_sensor` / `sensor` (position et température : diagnostic, désactivés par défaut) |
+| Autotest (écran Diagnostic) | Autotest | `binary_sensor` (problème, diagnostic, désactivé par défaut) |
+| Localiser la centrale | Localiser (LED) | `button` (désactivé par défaut) |
 | Filtre remplacé (6 ou 12 mois) | Filtre changé (6 mois) / (12 mois) | `button`, **remet le compteur filtre à zéro** |
+
+Les entités de diagnostic (hormis Jours de fonctionnement), ainsi que Débit fixe, Plages horaires
+et Localiser, sont désactivées par défaut : active-les depuis la page de l'appareil si besoin.
+L'action `vmi_plus.set_day_schedule` cible l'interrupteur Plages horaires : active-le d'abord.
 
 Le modèle, le numéro de série et les versions logicielle et matérielle sont affichés sur la page de
 l'appareil.
 
-Volontairement non exposé : configuration installateur (volume, surface, durée de vie du filtre,
-réglages bypass et GTC / Modbus, appairage des capteurs), mise à jour firmware, export de
-l'historique, reset usine et commandes SAV.
+Volontairement non exposé : modification de la configuration installateur (volume, surface, durée
+de vie du filtre, réglages bypass et GTC / Modbus, appairage des capteurs ; volume et surface sont
+seulement affichés en lecture seule), mise à jour firmware, export de l'historique, reset usine et
+commandes SAV.
 
 ### Fonctionnement
 
@@ -74,6 +79,9 @@ l'historique, reset usine et commandes SAV.
   **l'état lu sur la centrale** : un changement fait avec l'app ou la télécommande apparaît au relevé
   suivant.
 - Les entités passent en indisponible tant que la centrale est injoignable (app officielle connectée, hors de portée).
+- Le programme de la semaine et le détail de chaque capteur associé sont dans les diagnostics : page
+  de l'intégration → ⋮ → Télécharger les diagnostics (adresse MAC et numéros de série masqués).
+  Joins ce fichier à un rapport de bug.
 
 ### Programme des plages horaires
 
@@ -82,7 +90,7 @@ Exemple : lundi en vitesse moyenne à partir de 7 h, faible à partir de 22 h.
 ```yaml
 action: vmi_plus.set_day_schedule
 target:
-  entity_id: switch.urban_plages_horaires
+  entity_id: switch.urban_time_slots
 data:
   day: 1
   slots:

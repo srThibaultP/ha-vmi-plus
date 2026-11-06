@@ -72,6 +72,8 @@ views:
             name: Night ventilation boost
             icon: mdi:weather-night
             vertical: true
+          # Fixed air flow and Time slots are disabled by default: enable them
+          # on the device page first.
           - type: tile
             entity: switch.urban_debit_fixe_radon
             name: Fixed air flow (radon)
@@ -136,6 +138,8 @@ views:
       - type: markdown
         content: "## 🛠️ Maintenance"
 
+      # Self-test, paired sensors, software version and Locate (LED) are
+      # disabled by default: enable them on the device page first.
       - type: entities
         entities:
           - entity: sensor.urban_jours_de_fonctionnement

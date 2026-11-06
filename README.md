@@ -40,8 +40,8 @@ All entities belong to one device. Entity ids start with your device name (e.g.
 | Preheat button | Preheat | `switch` |
 | Holiday mode | Holiday mode | `switch` |
 | Night ventilation boost | Night boost | `switch` |
-| Fixed air flow (radon) | Fixed air flow (radon) | `switch` |
-| Time slots on/off, weekly programme as attributes | Time slots | `switch` |
+| Fixed air flow (radon) | Fixed air flow (radon) | `switch` (disabled by default) |
+| Time slots on/off | Time slots | `switch` (disabled by default) |
 | Time slot editor | `vmi_plus.set_day_schedule` | service |
 | Preheat target | Preheat target | `number` |
 | Summer supply-air limit | Summer supply air limit | `number` |
@@ -51,26 +51,33 @@ All entities belong to one device. Entity ids start with your device name (e.g.
 | Theoretical air flow (m³/h) | Theoretical air flow | `sensor` |
 | Season | Season | `sensor` |
 | Operating days | Operating days | `sensor` (diagnostic) |
-| Software version | Software version | `sensor` (diagnostic) |
-| Volume to ventilate, surface, preheat type | Volume to ventilate / Surface / Preheat type | `sensor` (diagnostic) |
-| Turbo heat, building management (GTC), action in progress | Turbo heat / Building management / Action in progress | `binary_sensor` (diagnostic) |
-| Paired wireless sensors, details as attributes | Paired sensors | `sensor` (diagnostic) |
-| Heat-exchanger bypass (+ position, temperature) | Heat exchanger bypass / Bypass position / Bypass temperature | `binary_sensor` / `sensor` |
-| Self-test (Diagnostic screen) | Self-test | `binary_sensor` (problem) |
-| Find my unit | Locate | `button` |
+| Software version | Software version | `sensor` (diagnostic, disabled by default) |
+| Volume to ventilate, surface, preheat type | Volume to ventilate / Surface / Preheat type | `sensor` (diagnostic, disabled by default) |
+| Turbo heat, building management (GTC), action in progress | Turbo heat / Building management / Action in progress | `binary_sensor` (diagnostic, disabled by default) |
+| Number of paired wireless sensors | Paired sensors | `sensor` (diagnostic, disabled by default) |
+| Heat-exchanger bypass (+ position, temperature) | Heat exchanger bypass / Bypass position / Bypass temperature | `binary_sensor` / `sensor` (position and temperature: diagnostic, disabled by default) |
+| Self-test (Diagnostic screen) | Self-test | `binary_sensor` (problem, diagnostic, disabled by default) |
+| Find my unit | Locate | `button` (disabled by default) |
 | Filter replaced (6 or 12 months) | New filter (6 months) / (12 months) | `button`, **restarts the filter counter** |
+
+Diagnostic entities other than Operating days, as well as Fixed air flow, Time slots and Locate,
+are disabled by default: enable them from the device page if needed. The
+`vmi_plus.set_day_schedule` action targets the Time slots switch, so enable it first.
 
 Model, serial number, firmware and hardware versions are shown on the device page.
 
-Not exposed on purpose: installer configuration (volume, surface, filter lifespan, bypass and
-GTC / Modbus settings, sensor pairing), firmware update, history export, factory reset and
-after-sales commands.
+Not exposed on purpose: changing the installer configuration (volume, surface, filter lifespan,
+bypass and GTC / Modbus settings, sensor pairing; volume and surface are only shown read-only),
+firmware update, history export, factory reset and after-sales commands.
 
 ### Behaviour
 
 - Readings are polled every 10 seconds. Every switch and select reflects the **state read from the
   unit**, so changes made with the app or the remote control show up at the next poll.
 - Entities become unavailable while the unit cannot be reached (official app connected, out of range).
+- The weekly programme and the details of each paired sensor are in the diagnostics: integration
+  page → ⋮ → Download diagnostics (MAC address and serial numbers redacted). Attach this file to a
+  bug report.
 
 ### Time slot programme
 
@@ -79,7 +86,7 @@ Example: Monday at medium speed from 7 am, low speed from 10 pm.
 ```yaml
 action: vmi_plus.set_day_schedule
 target:
-  entity_id: switch.urban_plages_horaires
+  entity_id: switch.urban_time_slots
 data:
   day: 1
   slots:

@@ -55,12 +55,14 @@ SWITCHES: tuple[VmiPlusSwitchEntityDescription, ...] = (
     VmiPlusSwitchEntityDescription(
         key="fixed_flow",
         translation_key="fixed_flow",
+        entity_registry_enabled_default=False,
         is_on_fn=lambda status: status.fixed_flow,
         set_fn=lambda client, on: client.set_fixed_flow(on),
     ),
     VmiPlusSwitchEntityDescription(
         key="time_slots",
         translation_key="time_slots",
+        entity_registry_enabled_default=False,
         is_on_fn=lambda status: status.time_slots,
         set_fn=lambda client, on: client.set_time_slots(on),
     ),

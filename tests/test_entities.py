@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.components.button import SERVICE_PRESS
@@ -90,6 +90,24 @@ async def test_unique_ids_unchanged(
     assert len(unique_ids) == 32
 
 
+DISABLED_BY_DEFAULT = [
+    "sensor.urban_software_version",
+    "sensor.urban_volume_to_ventilate",
+    "sensor.urban_surface",
+    "sensor.urban_preheat_type",
+    "sensor.urban_bypass_position",
+    "sensor.urban_bypass_temperature",
+    "sensor.urban_paired_sensors",
+    "binary_sensor.urban_self_test",
+    "binary_sensor.urban_turbo_heat",
+    "binary_sensor.urban_building_management",
+    "binary_sensor.urban_action_in_progress",
+    "switch.urban_fixed_air_flow_radon",
+    "switch.urban_time_slots",
+    "button.urban_locate",
+]
+
+
 async def test_disabled_by_default(
     hass: HomeAssistant,
     entity_registry: er.EntityRegistry,
@@ -97,12 +115,17 @@ async def test_disabled_by_default(
     mock_client: MagicMock,
     mock_ble_device: MagicMock,
 ) -> None:
-    """Rarely useful diagnostics start disabled."""
+    """Diagnostics (except operating days) and niche controls start disabled."""
     mock_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(mock_entry.entry_id)
-    entry = entity_registry.async_get("binary_sensor.urban_building_management")
-    assert entry is not None
-    assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    await hass.async_block_till_done()
+    disabled = {
+        entry.entity_id
+        for entry in er.async_entries_for_config_entry(entity_registry, mock_entry.entry_id)
+        if entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    }
+    assert disabled == set(DISABLED_BY_DEFAULT)
+    assert hass.states.get("sensor.urban_operating_days") is not None
     assert hass.states.get("sensor.urban_room_temperature") is not None
 
 
@@ -211,8 +234,12 @@ async def test_unknown_values(
     state = VmiPlusState()
     mock_client.update = AsyncMock(return_value=state)
     mock_entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(mock_entry.entry_id)
-    await hass.async_block_till_done()
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        new=True,
+    ):
+        assert await hass.config_entries.async_setup(mock_entry.entry_id)
+        await hass.async_block_till_done()
     for entity_id in (
         "select.visionair_speed",
         "number.visionair_preheat_target",

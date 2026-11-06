@@ -33,6 +33,7 @@ BUTTONS: tuple[VmiPlusButtonEntityDescription, ...] = (
     VmiPlusButtonEntityDescription(
         key="locate",
         translation_key="locate",
+        entity_registry_enabled_default=False,
         press_fn=lambda client: client.locate(),
     ),
     VmiPlusButtonEntityDescription(
