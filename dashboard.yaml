@@ -136,6 +136,8 @@ views:
       - type: markdown
         content: "## 🛠️ Maintenance"
 
+      # Self-test, paired sensors and software version are diagnostic entities
+      # disabled by default: enable them on the device page first.
       - type: entities
         entities:
           - entity: sensor.urban_jours_de_fonctionnement

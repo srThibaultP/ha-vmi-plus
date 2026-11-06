@@ -50,15 +50,18 @@ All entities belong to one device. Entity ids start with your device name (e.g.
 | Theoretical air flow (m³/h) | Débit théorique | `sensor` |
 | Season | Saison | `sensor` |
 | Operating days | Jours de fonctionnement | `sensor` (diagnostic) |
-| Software version | Version logicielle | `sensor` (diagnostic) |
-| Volume to ventilate, surface, preheat type | Volume à ventiler / Surface / Type de préchauffage | `sensor` (diagnostic) |
-| Turbo heat, building management (GTC), action in progress | Turbo chauffage / GTC / Action en cours | `binary_sensor` (diagnostic) |
-| Paired wireless sensors, details as attributes | Capteurs associés | `sensor` (diagnostic) |
-| Heat-exchanger bypass (+ position, temperature) | Bypass échangeur / Position bypass | `binary_sensor` / `sensor` |
-| Self-test (Diagnostic screen) | Autotest | `binary_sensor` (problem) |
+| Software version | Version logicielle | `sensor` (diagnostic, disabled by default) |
+| Volume to ventilate, surface, preheat type | Volume à ventiler / Surface / Type de préchauffage | `sensor` (diagnostic, disabled by default) |
+| Turbo heat, building management (GTC), action in progress | Turbo chauffage / GTC / Action en cours | `binary_sensor` (diagnostic, disabled by default) |
+| Paired wireless sensors, details as attributes | Capteurs associés | `sensor` (diagnostic, disabled by default) |
+| Heat-exchanger bypass (+ position, temperature) | Bypass échangeur / Position bypass | `binary_sensor` / `sensor` (position: diagnostic, disabled by default) |
+| Self-test (Diagnostic screen) | Autotest | `binary_sensor` (problem, diagnostic, disabled by default) |
 | Find my unit | Localiser (LED) | `button` |
 | Filter replaced (6 or 12 months) | Filtre changé (6 mois) / (12 mois) | `button`, **restarts the filter counter** |
 | Release the unit for the official app | Connexion Bluetooth | `switch` |
+
+Diagnostic entities other than Operating days are disabled by default: enable them from the
+device page if needed.
 
 Model, serial number, firmware and hardware versions are shown on the device page.
 
