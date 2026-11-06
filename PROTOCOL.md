@@ -96,7 +96,7 @@ AckData, `0x30` Csv, `0x31` Histo, `0xff` Nack.
 | `0x02` | Localisation | blink the LED to find the unit ✓ |
 | `0x03` | State | read → State frame ✓ |
 | `0x04` | Update | firmware update |
-| `0x05` | NewFilter | filter replaced, value = interval in months (6 or 12). **Restarts the filter counter.** |
+| `0x05` | NewFilter | filter replaced, value = interval in **weeks**: the app sends 52 for 12 months (364 days); 6 gave 42 days and 12 gave 84 days. **Restarts the filter counter.** |
 | `0x06` | Sensors | read → SensorsState ✓ |
 | `0x07` | Probes | read → ProbesState ✓ |
 | `0x09` / `0x22` / `0x21` / `0x20` | StartCsv / StartCsvV2 / StopCSV / CsvLength | history export |
@@ -147,7 +147,7 @@ included (`[0]` = `a5`).
 | `[24]` | preheatType | 1 electric ✓, 2 solar, 3 smart, 4 smart partner, 5 partner |
 | `[25]` | bypass | heat-exchanger bypass open ✓ |
 | `[26:28]` LE | upTime | operating days ✓ |
-| `[28:30]` LE | autonomy | remaining filter life, days (max 360) ✓ |
+| `[28:30]` LE | autonomy | remaining filter life, days (364 seen after a 12-month reset) ✓ |
 | `[32]` | theoreticalFlow | air flow × 10 m³/h (older apps) |
 | `[33]` | surventilation | night boost, **inverted**: `0` = on ✓ |
 | `[34]` | mode | speed 0 / 1 / 2 ✓ |
@@ -330,8 +330,7 @@ Where to look in `out/`:
 
 ## Still unknown
 
-1. Confirm the filter-change command (`0x05` + months) on a real filter replacement, and how the
-   app computes its FILTER %.
+1. Confirm that the app sends 26 (weeks) for 6 months, and how it computes its FILTER %.
 2. CO₂ / Nexelec / Nanosense sensors and hydraulic or solar preheating: decoded from the app's code
    only.
 3. Where the error codes appear in the frames.

@@ -96,7 +96,7 @@ AckData, `0x30` Csv, `0x31` Histo, `0xff` Nack.
 | `0x02` | Localisation | fait clignoter la LED pour trouver la centrale ✓ |
 | `0x03` | State | lecture → trame State ✓ |
 | `0x04` | Update | mise à jour firmware |
-| `0x05` | NewFilter | filtre remplacé, valeur = intervalle en mois (6 ou 12). **Remet le compteur filtre à zéro.** |
+| `0x05` | NewFilter | filtre remplacé, valeur = intervalle en **semaines** : l'app envoie 52 pour 12 mois (364 jours) ; 6 a donné 42 jours et 12 a donné 84 jours. **Remet le compteur filtre à zéro.** |
 | `0x06` | Sensors | lecture → SensorsState ✓ |
 | `0x07` | Probes | lecture → ProbesState ✓ |
 | `0x09` / `0x22` / `0x21` / `0x20` | StartCsv / StartCsvV2 / StopCSV / CsvLength | export de l'historique |
@@ -148,7 +148,7 @@ en-tête compris (`[0]` = `a5`).
 | `[24]` | preheatType | 1 électrique ✓, 2 solaire, 3 smart, 4 smart partner, 5 partner |
 | `[25]` | bypass | bypass de l'échangeur ouvert ✓ |
 | `[26:28]` LE | upTime | jours de fonctionnement ✓ |
-| `[28:30]` LE | autonomy | autonomie restante du filtre, jours (max 360) ✓ |
+| `[28:30]` LE | autonomy | autonomie restante du filtre, jours (364 vu après un reset 12 mois) ✓ |
 | `[32]` | theoreticalFlow | débit × 10 m³/h (anciennes apps) |
 | `[33]` | surventilation | mode nuit, **inversé** : `0` = actif ✓ |
 | `[34]` | mode | vitesse 0 / 1 / 2 ✓ |
@@ -334,8 +334,8 @@ Où regarder dans `out/` :
 
 ## Encore inconnu
 
-1. Confirmer la commande de changement de filtre (`0x05` + mois) lors d'un vrai remplacement, et la
-   façon dont l'app calcule son pourcentage FILTRE.
+1. Confirmer que l'app envoie 26 (semaines) pour 6 mois, et la façon dont elle calcule son pourcentage
+   FILTRE.
 2. Capteurs CO₂ / Nexelec / Nanosense et préchauffage hydraulique ou solaire : décodés depuis le code
    de l'app uniquement.
 3. L'emplacement des codes d'erreur dans les trames.
