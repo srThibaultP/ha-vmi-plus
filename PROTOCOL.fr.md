@@ -96,7 +96,7 @@ AckData, `0x30` Csv, `0x31` Histo, `0xff` Nack.
 | `0x02` | Localisation | fait clignoter la LED pour trouver la centrale ✓ |
 | `0x03` | State | lecture → trame State ✓ |
 | `0x04` | Update | mise à jour firmware |
-| `0x05` | NewFilter | filtre remplacé, valeur = intervalle en **semaines** : l'app envoie 52 pour 12 mois (364 jours) ; 6 a donné 42 jours et 12 a donné 84 jours. **Remet le compteur filtre à zéro.** |
+| `0x05` | NewFilter | filtre remplacé, valeur = intervalle en **semaines** : l'app envoie 52 pour 12 mois (364 jours) et 26 pour 6 mois (182 jours) ✓ ; 6 a donné 42 jours et 12 a donné 84 jours. **Remet le compteur filtre à zéro.** |
 | `0x06` | Sensors | lecture → SensorsState ✓ |
 | `0x07` | Probes | lecture → ProbesState ✓ |
 | `0x09` / `0x22` / `0x21` / `0x20` | StartCsv / StartCsvV2 / StopCSV / CsvLength | export de l'historique |
