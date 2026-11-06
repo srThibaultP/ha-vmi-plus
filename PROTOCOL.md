@@ -330,9 +330,8 @@ Where to look in `out/`:
 
 ## Still unknown
 
-1. Confirm that the app sends 26 (weeks) for 6 months, and how it computes its FILTER %.
-2. CO₂ / Nexelec / Nanosense sensors and hydraulic or solar preheating: decoded from the app's code
+1. CO₂ / Nexelec / Nanosense sensors and hydraulic or solar preheating: decoded from the app's code
    only.
-3. Where the error codes appear in the frames.
-4. Status `[3]`, `[18]`, `[36]`, `[37]`, `[39:43]`, ByPassState `[11]`, register `0x2c` and
+2. Where the error codes appear in the frames.
+3. Status `[3]`, `[18]`, `[36]`, `[37]`, `[39:43]`, ByPassState `[11]`, register `0x2c` and
    notification `0x50`.

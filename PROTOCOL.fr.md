@@ -334,10 +334,8 @@ Où regarder dans `out/` :
 
 ## Encore inconnu
 
-1. Confirmer que l'app envoie 26 (semaines) pour 6 mois, et la façon dont elle calcule son pourcentage
-   FILTRE.
-2. Capteurs CO₂ / Nexelec / Nanosense et préchauffage hydraulique ou solaire : décodés depuis le code
+1. Capteurs CO₂ / Nexelec / Nanosense et préchauffage hydraulique ou solaire : décodés depuis le code
    de l'app uniquement.
-3. L'emplacement des codes d'erreur dans les trames.
-4. État `[3]`, `[18]`, `[36]`, `[37]`, `[39:43]`, ByPassState `[11]`, registre `0x2c` et
+2. L'emplacement des codes d'erreur dans les trames.
+3. État `[3]`, `[18]`, `[36]`, `[37]`, `[39:43]`, ByPassState `[11]`, registre `0x2c` et
    notification `0x50`.
