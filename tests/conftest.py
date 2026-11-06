@@ -111,7 +111,7 @@ def mock_ble_device() -> Generator[MagicMock]:
 def mock_entry() -> MockConfigEntry:
     """Config entry of the unit."""
     return MockConfigEntry(
-        domain=DOMAIN, title="Urban", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
+        domain=DOMAIN, title="VisionAir", unique_id=ADDRESS, data={CONF_ADDRESS: ADDRESS}
     )
 
 

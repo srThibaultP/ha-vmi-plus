@@ -204,21 +204,24 @@ async def test_unknown_values(
     mock_client: MagicMock,
     mock_ble_device: MagicMock,
 ) -> None:
-    """Frames not read yet, preheat off and an unknown speed give unknown states."""
+    """Frames not read yet, preheat off and an unknown speed give unknown states.
+
+    Without a status frame the device falls back to the advertised name.
+    """
     state = VmiPlusState()
     mock_client.update = AsyncMock(return_value=state)
     mock_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(mock_entry.entry_id)
     await hass.async_block_till_done()
     for entity_id in (
-        "select.urban_speed",
-        "number.urban_preheat_target",
-        "sensor.urban_room_temperature",
-        "sensor.urban_internal_probe_temperature",
-        "sensor.urban_filter_life",
-        "sensor.urban_bypass_position",
-        "sensor.urban_paired_sensors",
-        "binary_sensor.urban_self_test",
+        "select.visionair_speed",
+        "number.visionair_preheat_target",
+        "sensor.visionair_room_temperature",
+        "sensor.visionair_internal_probe_temperature",
+        "sensor.visionair_filter_life",
+        "sensor.visionair_bypass_position",
+        "sensor.visionair_paired_sensors",
+        "binary_sensor.visionair_self_test",
     ):
         assert hass.states.get(entity_id).state == STATE_UNKNOWN, entity_id
-    assert hass.states.get("switch.urban_boost").state == "unavailable"
+    assert hass.states.get("switch.visionair_boost").state == "unavailable"

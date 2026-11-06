@@ -18,5 +18,5 @@
   "requirements": [
     "vmi-plus-ble @ git+https://github.com/srThibaultP/vmi-plus-ble@60d5cdddd9c9f1b2865064348624cb6212f79f57"
   ],
-  "version": "0.8.1"
+  "version": "0.8.2"
 }

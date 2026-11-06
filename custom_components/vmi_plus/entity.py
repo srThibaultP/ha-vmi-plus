@@ -23,7 +23,8 @@ class VmiPlusEntity(CoordinatorEntity[VmiPlusCoordinator]):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, address)},
             connections={(CONNECTION_BLUETOOTH, address)},
-            name=coordinator.config_entry.title,
+            # The unit advertises a generic name: prefer the model it reports.
+            name=(status.box if status else None) or coordinator.config_entry.title,
             manufacturer=MANUFACTURER,
             model=status.box if status else None,
             serial_number=status.serial if status else None,

@@ -121,11 +121,12 @@ async def test_ble_device_follows_adapter(
 
 
 async def test_device_info(hass: HomeAssistant, setup_integration: MockConfigEntry) -> None:
-    """Model, serial number and versions come from the status frame."""
+    """Name, model, serial number and versions come from the status frame."""
     device = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, ADDRESS), setup_integration.entry_id
     )
     assert device is not None
+    assert device.name == "Urban"
     assert (device.manufacturer, device.model, device.serial_number) == (
         "Ventilairsec",
         "Urban",
