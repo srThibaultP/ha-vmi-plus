@@ -1,0 +1,180 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "description": "Choose the ventilation unit to set up.",
+        "data": {
+          "address": "Unit"
+        },
+        "data_description": {
+          "address": "Units in range of a Bluetooth adapter or proxy of Home Assistant."
+        }
+      },
+      "bluetooth_confirm": {
+        "description": "Do you want to set up {name}?"
+      }
+    },
+    "error": {
+      "cannot_connect": "The unit did not answer. Close the official VMI+ app (the unit accepts one connection at a time) and try again."
+    },
+    "abort": {
+      "already_configured": "Device is already configured",
+      "no_devices_found": "No VMI+ unit found in range"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "bypass": {
+        "name": "Heat exchanger bypass"
+      },
+      "self_test": {
+        "name": "Self-test"
+      },
+      "turbo_heater": {
+        "name": "Turbo heat"
+      },
+      "gtc": {
+        "name": "Building management"
+      },
+      "action_in_progress": {
+        "name": "Action in progress"
+      }
+    },
+    "button": {
+      "locate": {
+        "name": "Locate"
+      },
+      "new_filter_6": {
+        "name": "New filter (6 months)"
+      },
+      "new_filter_12": {
+        "name": "New filter (12 months)"
+      }
+    },
+    "number": {
+      "summer_limit": {
+        "name": "Summer supply air limit"
+      },
+      "preheat_target": {
+        "name": "Preheat target"
+      }
+    },
+    "select": {
+      "speed": {
+        "name": "Speed",
+        "state": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
+      }
+    },
+    "sensor": {
+      "room_temperature": {
+        "name": "Room temperature"
+      },
+      "room_humidity": {
+        "name": "Room humidity"
+      },
+      "probe_temperature": {
+        "name": "Internal probe temperature"
+      },
+      "probe_humidity": {
+        "name": "Internal probe humidity"
+      },
+      "filter_days": {
+        "name": "Filter life"
+      },
+      "air_flow": {
+        "name": "Theoretical air flow"
+      },
+      "season": {
+        "name": "Season",
+        "state": {
+          "summer": "Summer",
+          "winter": "Winter",
+          "intermediate": "Intermediate"
+        }
+      },
+      "operating_days": {
+        "name": "Operating days"
+      },
+      "software_version": {
+        "name": "Software version"
+      },
+      "volume": {
+        "name": "Volume to ventilate"
+      },
+      "surface": {
+        "name": "Surface"
+      },
+      "preheat_type": {
+        "name": "Preheat type",
+        "state": {
+          "electric": "Electric",
+          "solar": "Solar",
+          "smart": "Smart",
+          "smart_partner": "Smart partner",
+          "partner": "Partner"
+        }
+      },
+      "bypass_position": {
+        "name": "Bypass position"
+      },
+      "bypass_temperature": {
+        "name": "Bypass temperature"
+      },
+      "paired_sensors": {
+        "name": "Paired sensors"
+      }
+    },
+    "switch": {
+      "boost": {
+        "name": "Boost"
+      },
+      "preheat": {
+        "name": "Preheat"
+      },
+      "holiday": {
+        "name": "Holiday mode"
+      },
+      "night_boost": {
+        "name": "Night boost"
+      },
+      "fixed_flow": {
+        "name": "Fixed air flow (radon)"
+      },
+      "time_slots": {
+        "name": "Time slots"
+      }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "VMI+ unit {address} is not in range of a Bluetooth adapter or proxy"
+    },
+    "update_failed": {
+      "message": "Could not read the VMI+ unit: {error}"
+    },
+    "command_failed": {
+      "message": "The VMI+ unit did not accept the command: {error}"
+    }
+  },
+  "services": {
+    "set_day_schedule": {
+      "name": "Set day schedule",
+      "description": "Programs one day of the weekly time slots of a VMI+ unit.",
+      "fields": {
+        "day": {
+          "name": "Day",
+          "description": "Day to program, 1 = Monday … 7 = Sunday."
+        },
+        "slots": {
+          "name": "Slots",
+          "description": "Up to 5 slots: start hour (0-23), speed (low, medium, high) and optional preheat temperature (12-18 °C, 0 = off). No slot clears the day."
+        }
+      }
+    }
+  }
+}

@@ -1,29 +1,31 @@
-"""Diagnostics pour l'intégration VMI+ (règle "diagnostics" de l'Integration
-Quality Scale) — utile pour joindre un état complet à un rapport de bug sans
-avoir à fouiller les logs Home Assistant."""
+"""Diagnostics of the VMI+ integration."""
+
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
 from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 
-from .device import VmiPlusDevice
+from .coordinator import VmiPlusConfigEntry
 
-TO_REDACT = {CONF_ADDRESS}
+TO_REDACT = {CONF_ADDRESS, "serial", "id"}
 
 
 async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, entry: ConfigEntry
+    hass: HomeAssistant, entry: VmiPlusConfigEntry
 ) -> dict[str, Any]:
-    device: VmiPlusDevice = entry.runtime_data
+    """Returns the config entry and the last decoded frames."""
+    coordinator = entry.runtime_data
+    state = coordinator.data
+    frames = {
+        name: asdict(value) if (value := getattr(state, name)) is not None else None
+        for name in ("status", "probes", "sensors", "time_slots", "bypass", "gtc")
+    }
     return {
         "entry_data": async_redact_data(dict(entry.data), TO_REDACT),
-        "enabled": device.enabled,
-        "connected": device.is_connected,
-        # Dernières valeurs de télémétrie reçues (température/humidité/mode nuit) —
-        # aucune donnée personnelle, pas besoin de rédaction.
-        "telemetry": device.telemetry,
+        "connected": coordinator.client.is_connected,
+        "frames": async_redact_data(frames, TO_REDACT),
     }

@@ -26,12 +26,13 @@ Appareils et services). Sinon, ajoute-la à la main : Ajouter une intégration �
 portée de la centrale.
 
 ⚠️ La centrale n'accepte **qu'une connexion Bluetooth à la fois**. Pour utiliser l'app officielle,
-coupe d'abord l'interrupteur « Connexion Bluetooth », puis rallume-le après.
+désactive d'abord l'intégration (Paramètres → Appareils et services → VMI+ → ⋮ → Désactiver), puis réactive-la après.
 
 ## Entités
 
 Toutes les entités appartiennent à un seul appareil. Les entity_id commencent par le nom de ton
-appareil (ex. `select.urban_vitesse` pour un appareil nommé « Urban »).
+appareil (ex. `select.urban_speed` pour un appareil nommé « Urban »). Les noms suivent la langue de
+Home Assistant (anglais et français fournis).
 
 | Fonction de l'app | Entité | Type |
 |---|---|---|
@@ -41,7 +42,7 @@ appareil (ex. `select.urban_vitesse` pour un appareil nommé « Urban »).
 | Mode vacances | Holiday | `switch` |
 | Mode nuit (surventilation nocturne) | Mode nuit | `switch` |
 | Débit fixe (radon) | Débit fixe (radon) | `switch` (désactivé par défaut) |
-| Plages horaires on/off, programme de la semaine en attributs | Plages horaires | `switch` (désactivé par défaut) |
+| Plages horaires on/off | Plages horaires | `switch` (désactivé par défaut) |
 | Édition des plages horaires | `vmi_plus.set_day_schedule` | service |
 | Consigne de préchauffage | Température de préchauffage | `number` |
 | Limite de soufflage été | Limite température été | `number` |
@@ -54,16 +55,15 @@ appareil (ex. `select.urban_vitesse` pour un appareil nommé « Urban »).
 | Version logicielle | Version logicielle | `sensor` (diagnostic, désactivé par défaut) |
 | Volume à ventiler, surface, type de préchauffage | Volume à ventiler / Surface / Type de préchauffage | `sensor` (diagnostic, désactivé par défaut) |
 | Turbo chauffage, gestion technique du bâtiment (GTC), action en cours | Turbo chauffage / GTC / Action en cours | `binary_sensor` (diagnostic, désactivé par défaut) |
-| Capteurs sans fil associés, détail en attributs | Capteurs associés | `sensor` (diagnostic, désactivé par défaut) |
-| Bypass de l'échangeur (+ position, température) | Bypass échangeur / Position bypass | `binary_sensor` / `sensor` (position : diagnostic, désactivée par défaut) |
+| Nombre de capteurs sans fil associés | Capteurs associés | `sensor` (diagnostic, désactivé par défaut) |
+| Bypass de l'échangeur (+ position, température) | Bypass échangeur / Position bypass / Température bypass | `binary_sensor` / `sensor` (position et température : diagnostic, désactivés par défaut) |
 | Autotest (écran Diagnostic) | Autotest | `binary_sensor` (problème, diagnostic, désactivé par défaut) |
 | Localiser la centrale | Localiser (LED) | `button` (désactivé par défaut) |
 | Filtre remplacé (6 ou 12 mois) | Filtre changé (6 mois) / (12 mois) | `button`, **remet le compteur filtre à zéro** |
-| Libérer la centrale pour l'app officielle | Connexion Bluetooth | `switch` |
 
 Les entités de diagnostic (hormis Jours de fonctionnement), ainsi que Débit fixe, Plages horaires
-et Localiser, sont désactivées par défaut : activez-les depuis la page de l'appareil si besoin. Le
-service `vmi_plus.set_day_schedule` cible l'interrupteur Plages horaires : activez-le d'abord.
+et Localiser, sont désactivées par défaut : active-les depuis la page de l'appareil si besoin.
+L'action `vmi_plus.set_day_schedule` cible l'interrupteur Plages horaires : active-le d'abord.
 
 Le modèle, le numéro de série et les versions logicielle et matérielle sont affichés sur la page de
 l'appareil.
@@ -78,11 +78,10 @@ commandes SAV.
 - Les mesures sont relevées toutes les 10 secondes. Chaque interrupteur et sélecteur reflète
   **l'état lu sur la centrale** : un changement fait avec l'app ou la télécommande apparaît au relevé
   suivant.
-- Pendant une coupure Bluetooth, les entités gardent leur dernière valeur au lieu de passer en
-  indisponible.
-- Pour un rapport de bug, télécharge les diagnostics depuis la page de l'intégration (⋮ →
-  Télécharger les diagnostics) : état de la connexion et dernières mesures décodées, adresse MAC
-  masquée.
+- Les entités passent en indisponible tant que la centrale est injoignable (app officielle connectée, hors de portée).
+- Le programme de la semaine et le détail de chaque capteur associé sont dans les diagnostics : page
+  de l'intégration → ⋮ → Télécharger les diagnostics (adresse MAC et numéros de série masqués).
+  Joins ce fichier à un rapport de bug.
 
 ### Programme des plages horaires
 
@@ -91,12 +90,12 @@ Exemple : lundi en vitesse moyenne à partir de 7 h, faible à partir de 22 h.
 ```yaml
 action: vmi_plus.set_day_schedule
 target:
-  entity_id: switch.urban_plages_horaires
+  entity_id: switch.urban_time_slots
 data:
   day: 1
   slots:
-    - {start: 7, speed: Moyenne}
-    - {start: 22, speed: Faible}
+    - {start: 7, speed: medium}
+    - {start: 22, speed: low, temperature: 16}
 ```
 
 Activer les plages horaires applique le programme tout de suite ; un programme vide correspond à la
@@ -108,28 +107,27 @@ vitesse la plus basse.
 uniquement des cartes intégrées. Les instructions d'installation sont en tête du fichier (adapte le
 préfixe des entity_id au nom de ton appareil).
 
-## Outil en ligne de commande
+## Outil en ligne de commande et bibliothèque
 
-[`vmi_ble.py`](vmi_ble.py) dialogue avec la centrale sans Home Assistant, pratique pour tester le
-protocole depuis n'importe quelle machine équipée du Bluetooth :
+Le protocole Bluetooth est dans la bibliothèque Python
+[vmi-plus-ble](https://github.com/srThibaultP/vmi-plus-ble), qui fournit aussi un outil en ligne de
+commande pour tester une centrale sans Home Assistant :
 
 ```bash
-pip install bleak
-python3 vmi_ble.py scan
-python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF speed 2
-python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF boost on
-python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF monitor
-python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF raw --reg 0x18 --val 0x01
+pip install "vmi-plus-ble @ git+https://github.com/srThibaultP/vmi-plus-ble"
+vmi-plus-ble scan
+vmi-plus-ble status AA:BB:CC:DD:EE:FF
+vmi-plus-ble speed AA:BB:CC:DD:EE:FF high
 ```
 
 ## Tests
 
-`tests/test_protocol.py` vérifie l'encodage et le décodage des trames sur de vraies trames, et
-`tests/test_entity_defaults.py` vérifie quelles entités sont désactivées par défaut. Aucun des deux
-ne demande d'installer Home Assistant :
+L'intégration est testée avec
+[pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) :
 
 ```bash
-python3 -m unittest discover -s tests
+pip install pytest-homeassistant-custom-component -e ../vmi-plus-ble
+pytest --cov
 ```
 
 ## Désinstallation

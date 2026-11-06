@@ -1,63 +1,79 @@
-"""Buttons: locate the unit (LED blink) and declare a new filter.
+"""Buttons: locate the unit and declare a new filter.
 
-The filter buttons send the app's "NewFilter" command (register 0x05) with the
-lifespan in months, exactly like Maintenance -> Filter change in the app: the
-filter counter restarts. Only press them after fitting a new filter.
+The filter buttons restart the filter counter, like Maintenance -> Filter
+change in the app: only press them after fitting a new filter.
 """
+
 from __future__ import annotations
 
-from homeassistant.components.button import ButtonEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS, EntityCategory
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from collections.abc import Callable, Coroutine
+from dataclasses import dataclass
+from typing import Any
 
-from .const import FILTER_LIFESPANS, REG_LOCATE, REG_NEW_FILTER
-from .device import VmiPlusDevice
+from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.const import EntityCategory
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from vmi_plus_ble import VmiPlusClient
+
+from .coordinator import VmiPlusConfigEntry, VmiPlusCoordinator
 from .entity import VmiPlusEntity
 
 PARALLEL_UPDATES = 1
 
 
+@dataclass(frozen=True, kw_only=True)
+class VmiPlusButtonEntityDescription(ButtonEntityDescription):
+    """Button sending one client command."""
+
+    press_fn: Callable[[VmiPlusClient], Coroutine[Any, Any, None]]
+
+
+BUTTONS: tuple[VmiPlusButtonEntityDescription, ...] = (
+    VmiPlusButtonEntityDescription(
+        key="locate",
+        translation_key="locate",
+        entity_registry_enabled_default=False,
+        press_fn=lambda client: client.locate(),
+    ),
+    VmiPlusButtonEntityDescription(
+        key="new_filter_6",
+        translation_key="new_filter_6",
+        entity_category=EntityCategory.CONFIG,
+        press_fn=lambda client: client.declare_new_filter(6),
+    ),
+    VmiPlusButtonEntityDescription(
+        key="new_filter_12",
+        translation_key="new_filter_12",
+        entity_category=EntityCategory.CONFIG,
+        press_fn=lambda client: client.declare_new_filter(12),
+    ),
+)
+
+
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: VmiPlusConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    device: VmiPlusDevice = entry.runtime_data
-    entities: list[ButtonEntity] = [
-        VmiPlusButton(device, entry, "locate", "Localiser (LED)", "mdi:led-on", REG_LOCATE, 0x00,
-                      enabled_default=False)
-    ]
-    entities += [
-        VmiPlusButton(
-            device, entry, f"new_filter_{months}", f"Filtre changé ({months} mois)",
-            "mdi:air-filter", REG_NEW_FILTER, months,
-        )
-        for months in FILTER_LIFESPANS
-    ]
-    async_add_entities(entities)
+    """Adds the buttons."""
+    coordinator = entry.runtime_data
+    async_add_entities(VmiPlusButton(coordinator, description) for description in BUTTONS)
 
 
 class VmiPlusButton(VmiPlusEntity, ButtonEntity):
-    _attr_entity_category = EntityCategory.CONFIG
+    """Button sending a command to the unit."""
+
+    entity_description: VmiPlusButtonEntityDescription
 
     def __init__(
-        self,
-        device: VmiPlusDevice,
-        entry: ConfigEntry,
-        key: str,
-        name: str,
-        icon: str,
-        register: int,
-        value: int,
-        enabled_default: bool = True,
+        self, coordinator: VmiPlusCoordinator, description: VmiPlusButtonEntityDescription
     ) -> None:
-        super().__init__(device, entry)
-        self._attr_entity_registry_enabled_default = enabled_default
-        self._register = register
-        self._value = value
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{key}"
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
 
     async def async_press(self) -> None:
-        await self._device.write_register(self._register, self._value)
+        """Sends the command."""
+        await self.coordinator.async_command(
+            self.entity_description.press_fn(self.coordinator.client)
+        )

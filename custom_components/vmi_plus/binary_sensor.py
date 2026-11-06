@@ -1,116 +1,95 @@
-"""Binary sensors read from the status frame: heat-exchanger bypass, self-test and flags."""
+"""Binary sensors read from the status frame."""
+
 from __future__ import annotations
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_ADDRESS, EntityCategory
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from collections.abc import Callable
+from dataclasses import dataclass
 
-from .device import VmiPlusDevice
+from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorEntityDescription
+from homeassistant.components.binary_sensor.const import BinarySensorDeviceClass
+from homeassistant.const import EntityCategory
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from vmi_plus_ble import Status
+
+from .coordinator import VmiPlusConfigEntry, VmiPlusCoordinator
 from .entity import VmiPlusEntity
 
 PARALLEL_UPDATES = 0
 
-# Status offset 10: one bit per self-test, 0x1f = all OK (Diagnostic screen).
-SELF_TEST_ALL_OK = 0x1F
+
+@dataclass(frozen=True, kw_only=True)
+class VmiPlusBinarySensorEntityDescription(BinarySensorEntityDescription):
+    """Binary sensor computed from the status frame."""
+
+    is_on_fn: Callable[[Status], bool]
+
+
+BINARY_SENSORS: tuple[VmiPlusBinarySensorEntityDescription, ...] = (
+    VmiPlusBinarySensorEntityDescription(
+        key="bypass_open",
+        translation_key="bypass",
+        device_class=BinarySensorDeviceClass.OPENING,
+        is_on_fn=lambda status: status.bypass_open,
+    ),
+    VmiPlusBinarySensorEntityDescription(
+        key="self_test",
+        translation_key="self_test",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=lambda status: not status.self_test_ok,
+    ),
+    VmiPlusBinarySensorEntityDescription(
+        key="turbo_heater",
+        translation_key="turbo_heater",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=lambda status: status.turbo_heater,
+    ),
+    VmiPlusBinarySensorEntityDescription(
+        key="gtc",
+        translation_key="gtc",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=lambda status: status.gtc,
+    ),
+    VmiPlusBinarySensorEntityDescription(
+        key="action_in_progress",
+        translation_key="action_in_progress",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=lambda status: status.action_in_progress,
+    ),
+)
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: VmiPlusConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    device: VmiPlusDevice = entry.runtime_data
+    """Adds the binary sensors."""
+    coordinator = entry.runtime_data
     async_add_entities(
-        [
-            VmiPlusBypassBinarySensor(device, entry),
-            VmiPlusSelfTestBinarySensor(device, entry),
-            VmiPlusFlagBinarySensor(device, entry, "turbo_heater", "Turbo chauffage", "mdi:radiator", None),
-            VmiPlusFlagBinarySensor(device, entry, "gtc", "GTC", "mdi:office-building-cog", None),
-            VmiPlusFlagBinarySensor(
-                device, entry, "action_in_progress", "Action en cours", None, BinarySensorDeviceClass.RUNNING
-            ),
-        ]
+        VmiPlusBinarySensor(coordinator, description) for description in BINARY_SENSORS
     )
 
 
-class _StatusBinarySensor(VmiPlusEntity, BinarySensorEntity):
-    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry, key: str) -> None:
-        super().__init__(device, entry)
-        self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{key}"
-        self._attr_is_on: bool | None = None
+class VmiPlusBinarySensor(VmiPlusEntity, BinarySensorEntity):
+    """Binary sensor backed by the status frame."""
 
-    async def async_added_to_hass(self) -> None:
-        self.async_on_remove(self._device.add_update_listener(self._on_update))
-
-    def _on_update(self) -> None:
-        data = self._device.telemetry.get("status")
-        if data is not None:
-            self._update_from_status(data)
-        self.async_write_ha_state()
-
-    def _update_from_status(self, data: dict) -> None:
-        raise NotImplementedError
-
-
-class VmiPlusBypassBinarySensor(_StatusBinarySensor):
-    """Heat-exchanger bypass state (status offset 25, app key "bypass")."""
-
-    _attr_name = "Bypass échangeur"
-    _attr_device_class = BinarySensorDeviceClass.OPENING
-    _attr_icon = "mdi:valve"
-
-    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
-        super().__init__(device, entry, "bypass_open")
-
-    def _update_from_status(self, data: dict) -> None:
-        self._attr_is_on = data["bypass_open"]
-        bypass = self._device.telemetry.get("bypass_state")
-        if bypass is not None:
-            self._attr_extra_state_attributes = {
-                key: bypass[key]
-                for key in ("position", "requested_position", "temperature", "forced", "bypass_type")
-            }
-
-
-class VmiPlusSelfTestBinarySensor(_StatusBinarySensor):
-    """Problem when any self-test of the Diagnostic screen fails."""
-
-    _attr_name = "Autotest"
-    _attr_device_class = BinarySensorDeviceClass.PROBLEM
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
-
-    def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
-        super().__init__(device, entry, "self_test")
-
-    def _update_from_status(self, data: dict) -> None:
-        self._attr_is_on = data["self_test"] != SELF_TEST_ALL_OK
-        self._attr_extra_state_attributes = {
-            "bits": f"{data['self_test']:05b}",
-            "details": data["self_test_details"],
-        }
-
-
-class VmiPlusFlagBinarySensor(_StatusBinarySensor):
-    """Diagnostic flag of the status frame: turbo heater [52], GTC [15], action in progress [9]."""
-
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
+    entity_description: VmiPlusBinarySensorEntityDescription
 
     def __init__(
-        self,
-        device: VmiPlusDevice,
-        entry: ConfigEntry,
-        key: str,
-        name: str,
-        icon: str | None,
-        device_class: BinarySensorDeviceClass | None,
+        self, coordinator: VmiPlusCoordinator, description: VmiPlusBinarySensorEntityDescription
     ) -> None:
-        super().__init__(device, entry, key)
-        self._key = key
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_device_class = device_class
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
 
-    def _update_from_status(self, data: dict) -> None:
-        self._attr_is_on = data[self._key]
+    @property
+    def is_on(self) -> bool | None:
+        """State read from the unit."""
+        status = self.coordinator.data.status
+        return self.entity_description.is_on_fn(status) if status else None

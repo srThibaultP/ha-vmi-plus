@@ -158,5 +158,3 @@ views:
             name: New filter fitted (6 months)
           - entity: button.urban_filtre_change_12_mois
             name: New filter fitted (12 months)
-          - entity: switch.urban_connexion_bluetooth
-            name: Bluetooth connection

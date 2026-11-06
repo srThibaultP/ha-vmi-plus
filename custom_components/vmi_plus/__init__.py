@@ -1,14 +1,19 @@
-"""Intégration VMI+ (Ventilairsec) — pilotage BLE des centrales VMCI."""
+"""The VMI+ (Ventilairsec) integration."""
+
 from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.components import bluetooth
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.typing import ConfigType
+from vmi_plus_ble import VmiPlusClient
 
 from .const import DOMAIN
-from .device import VmiPlusDevice
+from .coordinator import VmiPlusConfigEntry, VmiPlusCoordinator
+from .services import async_setup_services
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -19,52 +24,54 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
 ]
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    device = VmiPlusDevice(hass, entry.data[CONF_ADDRESS])
-    try:
-        await device.async_verify_connection()
-    except Exception as err:
-        raise ConfigEntryNotReady(
-            f"Centrale VMI+ {entry.data[CONF_ADDRESS]} injoignable en Bluetooth"
-        ) from err
 
-    entry.runtime_data = device
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
-    def _update_device_info() -> None:
-        # Model, serial number and versions come from the status frame (same
-        # values as the app's "Equipment life" screen).
-        status = device.telemetry.get("status")
-        if status is None:
-            return
-        registry = dr.async_get(hass)
-        device_entry = next(
-            (
-                candidate
-                for candidate in dr.async_entries_for_config_entry(registry, entry.entry_id)
-                if (DOMAIN, entry.data[CONF_ADDRESS]) in candidate.identifiers
-            ),
-            None,
-        )
-        if device_entry is None:
-            return
-        info = {
-            "model": status["box"] or device_entry.model,
-            "serial_number": status["serial"],
-            "sw_version": status["software_version"],
-            "hw_version": f"{status['electronic_version']}.{status['mechanical_version']}",
-        }
-        if any(getattr(device_entry, key) != value for key, value in info.items()):
-            registry.async_update_device(device_entry.id, **info)
-
-    entry.async_on_unload(device.add_update_listener(_update_device_info))
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Registers the integration's actions."""
+    async_setup_services(hass)
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        device: VmiPlusDevice = entry.runtime_data
-        await device.async_shutdown()
-    return unload_ok
+async def async_setup_entry(hass: HomeAssistant, entry: VmiPlusConfigEntry) -> bool:
+    """Sets up a unit from a config entry."""
+    address: str = entry.data[CONF_ADDRESS]
+    ble_device = bluetooth.async_ble_device_from_address(hass, address, connectable=True)
+    if ble_device is None:
+        raise ConfigEntryNotReady(
+            translation_domain=DOMAIN,
+            translation_key="device_not_found",
+            translation_placeholders={"address": address},
+        )
+
+    coordinator = VmiPlusCoordinator(hass, entry, VmiPlusClient(ble_device))
+    await coordinator.async_config_entry_first_refresh()
+    entry.runtime_data = coordinator
+
+    entry.async_on_unload(
+        bluetooth.async_register_callback(
+            hass,
+            coordinator.async_update_ble_device,
+            bluetooth.BluetoothCallbackMatcher(address=address, connectable=True),
+            bluetooth.BluetoothScanningMode.PASSIVE,
+        )
+    )
+
+    # Earlier versions had a "Bluetooth connection" switch; disabling the
+    # config entry now frees the unit for the official app.
+    registry = er.async_get(hass)
+    if old := registry.async_get_entity_id(
+        Platform.SWITCH, DOMAIN, f"{address}_connection_enabled"
+    ):
+        registry.async_remove(old)
+    # Before v0.8.0 the preheat switch was keyed "bypass"; the entity ID is kept.
+    if preheat := registry.async_get_entity_id(Platform.SWITCH, DOMAIN, f"{address}_bypass"):
+        registry.async_update_entity(preheat, new_unique_id=f"{address}_preheat")
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: VmiPlusConfigEntry) -> bool:
+    """Unloads a config entry and frees the unit."""
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

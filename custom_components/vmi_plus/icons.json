@@ -1,0 +1,92 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "bypass": {
+        "default": "mdi:valve"
+      },
+      "turbo_heater": {
+        "default": "mdi:radiator"
+      },
+      "gtc": {
+        "default": "mdi:office-building-cog"
+      }
+    },
+    "button": {
+      "locate": {
+        "default": "mdi:led-on"
+      },
+      "new_filter_6": {
+        "default": "mdi:air-filter"
+      },
+      "new_filter_12": {
+        "default": "mdi:air-filter"
+      }
+    },
+    "number": {
+      "summer_limit": {
+        "default": "mdi:sun-thermometer"
+      },
+      "preheat_target": {
+        "default": "mdi:heat-wave"
+      }
+    },
+    "select": {
+      "speed": {
+        "default": "mdi:fan",
+        "state": {
+          "low": "mdi:fan-speed-1",
+          "medium": "mdi:fan-speed-2",
+          "high": "mdi:fan-speed-3"
+        }
+      }
+    },
+    "sensor": {
+      "filter_days": {
+        "default": "mdi:air-filter"
+      },
+      "season": {
+        "default": "mdi:sun-snowflake-variant"
+      },
+      "operating_days": {
+        "default": "mdi:timer-outline"
+      },
+      "software_version": {
+        "default": "mdi:chip"
+      },
+      "preheat_type": {
+        "default": "mdi:heat-wave"
+      },
+      "bypass_position": {
+        "default": "mdi:valve"
+      },
+      "paired_sensors": {
+        "default": "mdi:access-point-network"
+      }
+    },
+    "switch": {
+      "boost": {
+        "default": "mdi:fan-plus"
+      },
+      "preheat": {
+        "default": "mdi:heat-wave"
+      },
+      "holiday": {
+        "default": "mdi:bag-suitcase"
+      },
+      "night_boost": {
+        "default": "mdi:weather-night"
+      },
+      "fixed_flow": {
+        "default": "mdi:fan-auto"
+      },
+      "time_slots": {
+        "default": "mdi:calendar-clock"
+      }
+    }
+  },
+  "services": {
+    "set_day_schedule": {
+      "service": "mdi:calendar-edit"
+    }
+  }
+}
