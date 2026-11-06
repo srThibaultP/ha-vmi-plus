@@ -1,7 +1,7 @@
-"""Entités de diagnostic désactivées par défaut, sauf Jours de fonctionnement.
+"""Entités désactivées par défaut : diagnostic (sauf Jours de fonctionnement),
+Plages horaires, Localiser (LED) et Débit fixe (radon).
 
-Vérification statique (module `ast`) des déclarations de `sensor.py` et
-`binary_sensor.py`, pour ne pas nécessiter d'installer `homeassistant`.
+Vérification statique (module `ast`) des déclarations des plateformes, pour ne pas nécessiter d'installer `homeassistant`.
 Lancer avec : python3 -m unittest discover -s tests
 """
 from __future__ import annotations
@@ -113,6 +113,65 @@ class DiagnosticClassesTests(unittest.TestCase):
                 "VmiPlusSensorsListSensor",
             ],
         )
+
+
+# Entités non diagnostic désactivées par défaut, par plateforme : clé passée
+# au constructeur (et donc à l'unique_id).
+DISABLED_KEYS = {
+    ("switch.py", "VmiPlusSwitch"): {"fixed_flow", "time_slots"},
+    ("button.py", "VmiPlusButton"): {"locate"},
+}
+
+
+class OptionalEntitiesTests(unittest.TestCase):
+    def _calls(self, module: str, cls: str) -> dict[str, ast.Call]:
+        calls = {}
+        for node in ast.walk(_parse(module)):
+            if not isinstance(node, ast.Call) or len(node.args) < 3:
+                continue
+            func = node.func
+            # Appel direct `VmiPlusSwitch(...)` ou `super().__init__(...)` d'une sous-classe.
+            direct = isinstance(func, ast.Name) and func.id == cls
+            via_super = (
+                isinstance(func, ast.Attribute)
+                and func.attr == "__init__"
+                and isinstance(func.value, ast.Call)
+                and isinstance(func.value.func, ast.Name)
+                and func.value.func.id == "super"
+            )
+            if (direct or via_super) and isinstance(node.args[2], ast.Constant):
+                key = node.args[2].value
+                if isinstance(key, str):
+                    calls[key] = node
+        return calls
+
+    def test_optional_entities_disabled(self) -> None:
+        for (module, cls), disabled in DISABLED_KEYS.items():
+            calls = self._calls(module, cls)
+            self.assertTrue(disabled <= set(calls), (module, sorted(calls)))
+            for key, call in calls.items():
+                enabled = next(
+                    (
+                        kw.value.value
+                        for kw in call.keywords
+                        if kw.arg == "enabled_default" and isinstance(kw.value, ast.Constant)
+                    ),
+                    None,
+                )
+                with self.subTest(module=module, key=key):
+                    if key in disabled:
+                        self.assertIs(enabled, False)
+                    else:
+                        self.assertIsNot(enabled, False)
+
+    def test_constructor_applies_enabled_default(self) -> None:
+        for module in ("switch.py", "button.py"):
+            with self.subTest(module=module):
+                source = (_COMPONENT / module).read_text(encoding="utf-8")
+                self.assertIn("enabled_default: bool = True", source)
+                self.assertIn(
+                    "self._attr_entity_registry_enabled_default = enabled_default", source
+                )
 
 
 if __name__ == "__main__":
