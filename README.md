@@ -39,8 +39,8 @@ All entities belong to one device. Entity ids start with your device name (e.g.
 | Preheat button | Préchauffage | `switch` |
 | Holiday mode | Holiday | `switch` |
 | Night ventilation boost | Mode nuit | `switch` |
-| Fixed air flow (radon) | Débit fixe (radon) | `switch` |
-| Time slots on/off, weekly programme as attributes | Plages horaires | `switch` |
+| Fixed air flow (radon) | Débit fixe (radon) | `switch` (disabled by default) |
+| Time slots on/off, weekly programme as attributes | Plages horaires | `switch` (disabled by default) |
 | Time slot editor | `vmi_plus.set_day_schedule` | service |
 | Preheat target | Température de préchauffage | `number` |
 | Summer supply-air limit | Limite température été | `number` |
@@ -56,12 +56,13 @@ All entities belong to one device. Entity ids start with your device name (e.g.
 | Paired wireless sensors, details as attributes | Capteurs associés | `sensor` (diagnostic, disabled by default) |
 | Heat-exchanger bypass (+ position, temperature) | Bypass échangeur / Position bypass | `binary_sensor` / `sensor` (position: diagnostic, disabled by default) |
 | Self-test (Diagnostic screen) | Autotest | `binary_sensor` (problem, diagnostic, disabled by default) |
-| Find my unit | Localiser (LED) | `button` |
+| Find my unit | Localiser (LED) | `button` (disabled by default) |
 | Filter replaced (6 or 12 months) | Filtre changé (6 mois) / (12 mois) | `button`, **restarts the filter counter** |
 | Release the unit for the official app | Connexion Bluetooth | `switch` |
 
-Diagnostic entities other than Operating days are disabled by default: enable them from the
-device page if needed.
+Diagnostic entities other than Operating days, as well as Fixed air flow, Time slots and Find my
+unit, are disabled by default: enable them from the device page if needed. The
+`vmi_plus.set_day_schedule` service targets the Time slots switch, so enable it first.
 
 Model, serial number, firmware and hardware versions are shown on the device page.
 

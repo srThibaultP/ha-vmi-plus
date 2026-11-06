@@ -24,7 +24,8 @@ async def async_setup_entry(
 ) -> None:
     device: VmiPlusDevice = entry.runtime_data
     entities: list[ButtonEntity] = [
-        VmiPlusButton(device, entry, "locate", "Localiser (LED)", "mdi:led-on", REG_LOCATE, 0x00)
+        VmiPlusButton(device, entry, "locate", "Localiser (LED)", "mdi:led-on", REG_LOCATE, 0x00,
+                      enabled_default=False)
     ]
     entities += [
         VmiPlusButton(
@@ -48,8 +49,10 @@ class VmiPlusButton(VmiPlusEntity, ButtonEntity):
         icon: str,
         register: int,
         value: int,
+        enabled_default: bool = True,
     ) -> None:
         super().__init__(device, entry)
+        self._attr_entity_registry_enabled_default = enabled_default
         self._register = register
         self._value = value
         self._attr_name = name

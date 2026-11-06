@@ -40,8 +40,8 @@ appareil (ex. `select.urban_vitesse` pour un appareil nommé « Urban »).
 | Bouton préchauffage | Préchauffage | `switch` |
 | Mode vacances | Holiday | `switch` |
 | Mode nuit (surventilation nocturne) | Mode nuit | `switch` |
-| Débit fixe (radon) | Débit fixe (radon) | `switch` |
-| Plages horaires on/off, programme de la semaine en attributs | Plages horaires | `switch` |
+| Débit fixe (radon) | Débit fixe (radon) | `switch` (désactivé par défaut) |
+| Plages horaires on/off, programme de la semaine en attributs | Plages horaires | `switch` (désactivé par défaut) |
 | Édition des plages horaires | `vmi_plus.set_day_schedule` | service |
 | Consigne de préchauffage | Température de préchauffage | `number` |
 | Limite de soufflage été | Limite température été | `number` |
@@ -57,12 +57,13 @@ appareil (ex. `select.urban_vitesse` pour un appareil nommé « Urban »).
 | Capteurs sans fil associés, détail en attributs | Capteurs associés | `sensor` (diagnostic, désactivé par défaut) |
 | Bypass de l'échangeur (+ position, température) | Bypass échangeur / Position bypass | `binary_sensor` / `sensor` (position : diagnostic, désactivée par défaut) |
 | Autotest (écran Diagnostic) | Autotest | `binary_sensor` (problème, diagnostic, désactivé par défaut) |
-| Localiser la centrale | Localiser (LED) | `button` |
+| Localiser la centrale | Localiser (LED) | `button` (désactivé par défaut) |
 | Filtre remplacé (6 ou 12 mois) | Filtre changé (6 mois) / (12 mois) | `button`, **remet le compteur filtre à zéro** |
 | Libérer la centrale pour l'app officielle | Connexion Bluetooth | `switch` |
 
-Les entités de diagnostic, hormis Jours de fonctionnement, sont désactivées par défaut :
-activez-les depuis la page de l'appareil si besoin.
+Les entités de diagnostic (hormis Jours de fonctionnement), ainsi que Débit fixe, Plages horaires
+et Localiser, sont désactivées par défaut : activez-les depuis la page de l'appareil si besoin. Le
+service `vmi_plus.set_day_schedule` cible l'interrupteur Plages horaires : activez-le d'abord.
 
 Le modèle, le numéro de série et les versions logicielle et matérielle sont affichés sur la page de
 l'appareil.

@@ -42,7 +42,8 @@ async def async_setup_entry(
             VmiPlusSwitch(device, entry, "bypass", "Préchauffage", REG_BYPASS, "bypass"),
             VmiPlusSwitch(device, entry, "holiday", "Holiday", REG_HOLIDAY, "holiday"),
             VmiPlusNightBoostSwitch(device, entry),
-            VmiPlusSwitch(device, entry, "fixed_flow", "Débit fixe (radon)", REG_FIXED_FLOW, "fixed_flow"),
+            VmiPlusSwitch(device, entry, "fixed_flow", "Débit fixe (radon)", REG_FIXED_FLOW, "fixed_flow",
+                          enabled_default=False),
             VmiPlusTimeSlotsSwitch(device, entry),
             VmiPlusConnectionSwitch(device, entry),
         ]
@@ -83,10 +84,12 @@ class VmiPlusSwitch(VmiPlusEntity, SwitchEntity):
         name: str,
         register: int,
         telemetry_field: str,
+        enabled_default: bool = True,
     ) -> None:
         super().__init__(device, entry)
         self._register = register
         self._telemetry_field = telemetry_field
+        self._attr_entity_registry_enabled_default = enabled_default
         self._attr_name = name
         self._attr_unique_id = f"{entry.data[CONF_ADDRESS]}_{key}"
         self._attr_is_on = False
@@ -128,7 +131,10 @@ class VmiPlusTimeSlotsSwitch(VmiPlusSwitch):
     _attr_icon = "mdi:calendar-clock"
 
     def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
-        super().__init__(device, entry, "time_slots", "Plages horaires", REG_TIME_SLOTS, "time_slots")
+        super().__init__(
+            device, entry, "time_slots", "Plages horaires", REG_TIME_SLOTS, "time_slots",
+            enabled_default=False,
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
