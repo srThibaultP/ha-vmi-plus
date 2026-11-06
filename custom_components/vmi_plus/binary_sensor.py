@@ -78,6 +78,7 @@ class VmiPlusSelfTestBinarySensor(_StatusBinarySensor):
     _attr_name = "Autotest"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
 
     def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
         super().__init__(device, entry, "self_test")
@@ -94,6 +95,7 @@ class VmiPlusFlagBinarySensor(_StatusBinarySensor):
     """Diagnostic flag of the status frame: turbo heater [52], GTC [15], action in progress [9]."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
 
     def __init__(
         self,

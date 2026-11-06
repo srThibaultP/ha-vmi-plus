@@ -51,15 +51,18 @@ appareil (ex. `select.urban_vitesse` pour un appareil nommé « Urban »).
 | Débit théorique (m³/h) | Débit théorique | `sensor` |
 | Saison | Saison | `sensor` |
 | Jours de fonctionnement | Jours de fonctionnement | `sensor` (diagnostic) |
-| Version logicielle | Version logicielle | `sensor` (diagnostic) |
-| Volume à ventiler, surface, type de préchauffage | Volume à ventiler / Surface / Type de préchauffage | `sensor` (diagnostic) |
-| Turbo chauffage, gestion technique du bâtiment (GTC), action en cours | Turbo chauffage / GTC / Action en cours | `binary_sensor` (diagnostic) |
-| Capteurs sans fil associés, détail en attributs | Capteurs associés | `sensor` (diagnostic) |
-| Bypass de l'échangeur (+ position, température) | Bypass échangeur / Position bypass | `binary_sensor` / `sensor` |
-| Autotest (écran Diagnostic) | Autotest | `binary_sensor` (problème) |
+| Version logicielle | Version logicielle | `sensor` (diagnostic, désactivé par défaut) |
+| Volume à ventiler, surface, type de préchauffage | Volume à ventiler / Surface / Type de préchauffage | `sensor` (diagnostic, désactivé par défaut) |
+| Turbo chauffage, gestion technique du bâtiment (GTC), action en cours | Turbo chauffage / GTC / Action en cours | `binary_sensor` (diagnostic, désactivé par défaut) |
+| Capteurs sans fil associés, détail en attributs | Capteurs associés | `sensor` (diagnostic, désactivé par défaut) |
+| Bypass de l'échangeur (+ position, température) | Bypass échangeur / Position bypass | `binary_sensor` / `sensor` (position : diagnostic, désactivée par défaut) |
+| Autotest (écran Diagnostic) | Autotest | `binary_sensor` (problème, diagnostic, désactivé par défaut) |
 | Localiser la centrale | Localiser (LED) | `button` |
 | Filtre remplacé (6 ou 12 mois) | Filtre changé (6 mois) / (12 mois) | `button`, **remet le compteur filtre à zéro** |
 | Libérer la centrale pour l'app officielle | Connexion Bluetooth | `switch` |
+
+Les entités de diagnostic, hormis Jours de fonctionnement, sont désactivées par défaut :
+activez-les depuis la page de l'appareil si besoin.
 
 Le modèle, le numéro de série et les versions logicielle et matérielle sont affichés sur la page de
 l'appareil.

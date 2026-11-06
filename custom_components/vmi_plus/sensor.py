@@ -47,7 +47,8 @@ async def async_setup_entry(
                            SensorDeviceClass.HUMIDITY, PERCENTAGE),
             VmiPlusSensor(device, entry, "status", "operating_days", "Jours de fonctionnement",
                            SensorDeviceClass.DURATION, UnitOfTime.DAYS,
-                           SensorStateClass.TOTAL_INCREASING, EntityCategory.DIAGNOSTIC),
+                           SensorStateClass.TOTAL_INCREASING, EntityCategory.DIAGNOSTIC,
+                           enabled_default=True),
             VmiPlusSensor(device, entry, "status", "air_flow", "Débit théorique",
                            SensorDeviceClass.VOLUME_FLOW_RATE,
                            UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR),
@@ -88,6 +89,7 @@ class VmiPlusSensor(VmiPlusEntity, SensorEntity):
         state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT,
         entity_category: EntityCategory | None = None,
         options: list[str] | None = None,
+        enabled_default: bool | None = None,
     ) -> None:
         super().__init__(device, entry)
         self._telemetry_type = telemetry_type
@@ -99,6 +101,11 @@ class VmiPlusSensor(VmiPlusEntity, SensorEntity):
         self._attr_state_class = state_class
         self._attr_entity_category = entity_category
         self._attr_options = options
+        # Diagnostic entities are disabled by default (Integration Quality
+        # Scale rule "entity-disabled-by-default"), unless explicitly enabled.
+        if enabled_default is None:
+            enabled_default = entity_category is not EntityCategory.DIAGNOSTIC
+        self._attr_entity_registry_enabled_default = enabled_default
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(self._device.add_update_listener(self._on_update))
@@ -121,6 +128,7 @@ class VmiPlusSensorsListSensor(VmiPlusEntity, SensorEntity):
     _attr_name = "Capteurs associés"
     _attr_icon = "mdi:access-point-network"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
 
     def __init__(self, device: VmiPlusDevice, entry: ConfigEntry) -> None:
         super().__init__(device, entry)
