@@ -66,15 +66,17 @@ unit, are disabled by default: enable them from the device page if needed. The
 
 Model, serial number, firmware and hardware versions are shown on the device page.
 
-Not exposed on purpose: installer configuration (volume, surface, filter lifespan, bypass and
-GTC / Modbus settings, sensor pairing), firmware update, history export, factory reset and
-after-sales commands.
+Not exposed on purpose: changing the installer configuration (volume, surface, filter lifespan,
+bypass and GTC / Modbus settings, sensor pairing; volume and surface are only shown read-only),
+firmware update, history export, factory reset and after-sales commands.
 
 ### Behaviour
 
 - Readings are polled every 10 seconds. Every switch and select reflects the **state read from the
   unit**, so changes made with the app or the remote control show up at the next poll.
 - During a Bluetooth outage, entities keep their last known value instead of becoming unavailable.
+- For a bug report, download the diagnostics from the integration's page (⋮ → Download
+  diagnostics): connection state and the last decoded readings, MAC address redacted.
 
 ### Time slot programme
 
@@ -115,8 +117,9 @@ python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF raw --reg 0x18 --val 0x01
 
 ## Tests
 
-`tests/test_protocol.py` checks the frame encoder and decoder against real frames, with no
-dependency:
+`tests/test_protocol.py` checks the frame encoder and decoder against real frames, and
+`tests/test_entity_defaults.py` checks which entities are disabled by default. Neither needs Home
+Assistant installed:
 
 ```bash
 python3 -m unittest discover -s tests

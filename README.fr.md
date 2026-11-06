@@ -68,9 +68,10 @@ service `vmi_plus.set_day_schedule` cible l'interrupteur Plages horaires : activ
 Le modèle, le numéro de série et les versions logicielle et matérielle sont affichés sur la page de
 l'appareil.
 
-Volontairement non exposé : configuration installateur (volume, surface, durée de vie du filtre,
-réglages bypass et GTC / Modbus, appairage des capteurs), mise à jour firmware, export de
-l'historique, reset usine et commandes SAV.
+Volontairement non exposé : modification de la configuration installateur (volume, surface, durée
+de vie du filtre, réglages bypass et GTC / Modbus, appairage des capteurs ; volume et surface sont
+seulement affichés en lecture seule), mise à jour firmware, export de l'historique, reset usine et
+commandes SAV.
 
 ### Fonctionnement
 
@@ -79,6 +80,9 @@ l'historique, reset usine et commandes SAV.
   suivant.
 - Pendant une coupure Bluetooth, les entités gardent leur dernière valeur au lieu de passer en
   indisponible.
+- Pour un rapport de bug, télécharge les diagnostics depuis la page de l'intégration (⋮ →
+  Télécharger les diagnostics) : état de la connexion et dernières mesures décodées, adresse MAC
+  masquée.
 
 ### Programme des plages horaires
 
@@ -120,8 +124,9 @@ python3 vmi_ble.py --address AA:BB:CC:DD:EE:FF raw --reg 0x18 --val 0x01
 
 ## Tests
 
-`tests/test_protocol.py` vérifie l'encodage et le décodage des trames sur de vraies trames, sans
-aucune dépendance :
+`tests/test_protocol.py` vérifie l'encodage et le décodage des trames sur de vraies trames, et
+`tests/test_entity_defaults.py` vérifie quelles entités sont désactivées par défaut. Aucun des deux
+ne demande d'installer Home Assistant :
 
 ```bash
 python3 -m unittest discover -s tests
