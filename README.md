@@ -1,4 +1,4 @@
-<p align="center"><img src="logo.png" width="96" alt="VMI+ logo"></p>
+<p align="center"><img src="custom_components/vmi_plus/brand/logo.png" width="96" alt="VMI+ logo"></p>
 
 🇬🇧 English · [🇫🇷 Français](README.fr.md)
 
