@@ -49,6 +49,7 @@ Home Assistant (anglais et français fournis).
 | Consigne de préchauffage | Température de préchauffage | `number` |
 | Limite de soufflage été | Limite température été | `number` |
 | Température / humidité de la télécommande | Température pièce / Humidité pièce | `sensor` |
+| Indice COV / température / humidité du capteur de qualité d'air, seulement s'il est appairé | Qualité de l'air COV / Température qualité de l'air / Humidité qualité de l'air | `sensor` |
 | Température / humidité de la sonde interne | Température sonde interne / Humidité sonde interne | `sensor` |
 | Autonomie restante du filtre (jours) | Autonomie filtre | `sensor` |
 | Débit théorique (m³/h) | Débit théorique | `sensor` |

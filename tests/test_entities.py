@@ -173,6 +173,28 @@ async def test_commands(
     assert mock_client.update.await_count > reads
 
 
+async def test_air_quality_sensor_added_when_paired(
+    hass: HomeAssistant,
+    mock_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    mock_ble_device: MagicMock,
+) -> None:
+    """The VOC entities appear only for a unit with an air-quality sensor paired."""
+    from .conftest import SENSORS_WITH_COV, make_state
+
+    mock_client.state = make_state(SENSORS_WITH_COV)
+    mock_client.update = AsyncMock(return_value=mock_client.state)
+    mock_entry.add_to_hass(hass)
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default", new=True
+    ):
+        assert await hass.config_entries.async_setup(mock_entry.entry_id)
+        await hass.async_block_till_done()
+    assert hass.states.get("sensor.urban_air_quality_voc").state == "56"
+    assert hass.states.get("sensor.urban_air_quality_humidity").state == "61"
+    assert hass.states.get("sensor.urban_air_quality_temperature").state == "20"
+
+
 @pytest.mark.usefixtures("setup_integration")
 async def test_command_error(hass: HomeAssistant, mock_client: MagicMock) -> None:
     """A failed write is reported to the user."""

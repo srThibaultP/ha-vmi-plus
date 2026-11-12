@@ -31,12 +31,19 @@ SENSORS = bytes.fromhex(
 )
 PROBES = bytes([0xA5, 0xB6, 0x03, 0x06, 0x05, 0x01, 28, 0, 56, 0])
 BYPASS = bytes.fromhex("a5b61806126400001c1000ff00000000000000000000649b")
+# A second unit also carries an air-quality (VOC) sensor: remote + cov.
+SENSORS_WITH_COV = bytes.fromhex(
+    "a5b602067aefbeadde030314004c004c289041030838003d14ff000000000000000000"
+    "ff000000000000000000ff000000000000000000ff000000000000000000ff00000000"
+    "0000000000ff000000000000000000ff000000000000000000ff000000000000000000"
+    "0000000000000000000000000000000000000000000000"
+)
 
 
-def make_state() -> VmiPlusState:
+def make_state(sensors: bytes = SENSORS) -> VmiPlusState:
     """State as read from the real unit."""
     state = VmiPlusState()
-    for frame in (STATUS, SENSORS, PROBES, BYPASS):
+    for frame in (STATUS, sensors, PROBES, BYPASS):
         decoded = parse_frame(frame)
         assert decoded is not None
         state.update(decoded)

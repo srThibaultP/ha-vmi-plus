@@ -127,6 +127,15 @@
       },
       "paired_sensors": {
         "name": "Capteurs associés"
+      },
+      "air_quality_voc": {
+        "name": "Qualité de l'air COV"
+      },
+      "air_quality_temperature": {
+        "name": "Température qualité de l'air"
+      },
+      "air_quality_humidity": {
+        "name": "Humidité qualité de l'air"
       }
     },
     "switch": {

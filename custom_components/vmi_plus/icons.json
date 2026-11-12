@@ -61,6 +61,15 @@
       },
       "paired_sensors": {
         "default": "mdi:access-point-network"
+      },
+      "air_quality_voc": {
+        "default": "mdi:air-filter"
+      },
+      "air_quality_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "air_quality_humidity": {
+        "default": "mdi:water-percent"
       }
     },
     "switch": {

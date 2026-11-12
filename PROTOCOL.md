@@ -32,6 +32,15 @@ app's code only.
 The app also contains a second UUID family (`7c4adc01`…`7c4adc07-2f33-11e7-93ae-92361f002671`),
 probably for another product range; it is not used by the Urban.
 
+### App login (not needed for BLE)
+
+The BLE link itself is open, so this library needs no credentials. The official app, however,
+gates its "private customer" mode behind a login, scanned as a barcode on the unit or a QR code on
+the remote. For the curious: that login is derived from the serial number reported in the State
+frame (`machineId`). The numeric part is the serial with its leading digit removed, behind a short
+model-letter prefix (seen as `U` and `MUV`). For example a unit whose State frame reports serial
+`9NNNNNNN` is accepted with the login `UNNNNNNN`.
+
 ## Frame format
 
 Every frame, in both directions, has the same layout:
@@ -177,10 +186,14 @@ Answer to register `0x06`. Up to 10 wireless sensors, 10 bytes each from offset 
 |---|---|
 | `+0..+3` LE | sensor id (hex) ✓ |
 | `+4` | room: 0 unknown, 1 living room, 2 kitchen, 3 bathroom 1, 4 bathroom 2, 5–8 bedroom 1–4, 9 cellar ✓ |
-| `+5` | kind: 0 absent, 1 Nexelec CO₂, 2 Nexelec temperature, 3 remote control ✓, 4 box, 5 Nanosense |
-| `+6..+7` | CO₂ sensors: CO₂ ppm (LE). Others: `+6` = temperature °C (≥ 128 means negative: value − 255) ✓ |
+| `+5` | kind: 0 absent, 1 Nexelec CO₂, 2 Nexelec temperature, 3 remote control ✓, 4 box, 5 Nanosense, 8 air-quality (VOC) ✓ |
+| `+6..+7` | CO₂ sensors: CO₂ ppm (LE). VOC sensors: `+6` = VOC index ✓. Others: `+6` = temperature °C (≥ 128 means negative: value − 255) ✓ |
 | `+8` | humidity % ✓ |
-| `+9` | third value |
+| `+9` | third value; for the VOC sensor this is the temperature °C (signed) ✓ |
+
+The VOC sensor (kind 8) reports an air-quality index at `+6`, humidity at `+8` and its own
+temperature at `+9`, so for that kind the temperature moves from `+6` to `+9`. Its gauges in the
+app are labelled VOC and HUMID.
 
 The id prefix tells the app the model when pairing: `I420` CO₂, `I880` temperature, `ASI ` /
 `SNE ` remote control.

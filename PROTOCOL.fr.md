@@ -32,6 +32,15 @@ vient uniquement du code de l'app.
 L'app contient aussi une seconde famille d'UUID (`7c4adc01`…`7c4adc07-2f33-11e7-93ae-92361f002671`),
 probablement pour une autre gamme ; l'Urban ne l'utilise pas.
 
+### Code d'accès de l'app (inutile pour le BLE)
+
+Le lien BLE est ouvert : cette bibliothèque n'a besoin d'aucun identifiant. L'app officielle, elle,
+protège son mode « particulier » par un code, scanné comme code-barres sur la machine ou QR code sur
+la télécommande. Pour les curieux : ce code dérive du numéro de série donné par la trame d'état
+(`machineId`). La partie chiffrée est le numéro de série privé de son premier chiffre, derrière un
+court préfixe-lettre de modèle (observés : `U` et `MUV`). Exemple : une machine dont la trame d'état
+annonce le série `9NNNNNNN` s'ouvre avec le code `UNNNNNNN`.
+
 ## Format des trames
 
 Toutes les trames, dans les deux sens, ont la même forme :
@@ -178,10 +187,14 @@ Réponse au registre `0x06`. Jusqu'à 10 capteurs sans fil, 10 octets chacun à 
 |---|---|
 | `+0..+3` LE | identifiant du capteur (hexa) ✓ |
 | `+4` | pièce : 0 inconnue, 1 séjour, 2 cuisine, 3 salle de bain 1, 4 salle de bain 2, 5–8 chambre 1–4, 9 cave ✓ |
-| `+5` | type : 0 absent, 1 Nexelec CO₂, 2 Nexelec température, 3 télécommande ✓, 4 box, 5 Nanosense |
-| `+6..+7` | capteurs CO₂ : CO₂ en ppm (LE). Autres : `+6` = température °C (≥ 128 = négatif : valeur − 255) ✓ |
+| `+5` | type : 0 absent, 1 Nexelec CO₂, 2 Nexelec température, 3 télécommande ✓, 4 box, 5 Nanosense, 8 qualité d'air (COV) ✓ |
+| `+6..+7` | capteurs CO₂ : CO₂ en ppm (LE). Capteurs COV : `+6` = indice COV ✓. Autres : `+6` = température °C (≥ 128 = négatif : valeur − 255) ✓ |
 | `+8` | humidité % ✓ |
-| `+9` | troisième valeur |
+| `+9` | troisième valeur ; pour le capteur COV c'est la température °C (signée) ✓ |
+
+Le capteur COV (type 8) donne un indice de qualité d'air en `+6`, l'humidité en `+8` et sa propre
+température en `+9` : pour ce type, la température passe donc de `+6` à `+9`. Ses jauges dans l'app
+s'appellent COV et HUMID.
 
 Le préfixe de l'identifiant indique le modèle à l'appairage : `I420` CO₂, `I880` température,
 `ASI ` / `SNE ` télécommande.

@@ -53,6 +53,11 @@ def _remote(state: VmiPlusState, field: str) -> int | None:
     return getattr(remote, field) if remote else None
 
 
+def _air_quality(state: VmiPlusState, field: str) -> int | None:
+    sensor = state.sensors.air_quality if state.sensors else None
+    return getattr(sensor, field) if sensor else None
+
+
 SENSORS: tuple[VmiPlusSensorEntityDescription, ...] = (
     VmiPlusSensorEntityDescription(
         key="remote_temperature",
@@ -180,6 +185,32 @@ SENSORS: tuple[VmiPlusSensorEntityDescription, ...] = (
     ),
 )
 
+# Sensors created only when the matching wireless device is paired to the unit.
+AIR_QUALITY_SENSORS: tuple[VmiPlusSensorEntityDescription, ...] = (
+    VmiPlusSensorEntityDescription(
+        key="air_quality_voc",
+        translation_key="air_quality_voc",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda state: _air_quality(state, "voc"),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="air_quality_temperature",
+        translation_key="air_quality_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda state: _air_quality(state, "temperature"),
+    ),
+    VmiPlusSensorEntityDescription(
+        key="air_quality_humidity",
+        translation_key="air_quality_humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda state: _air_quality(state, "humidity"),
+    ),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -188,7 +219,12 @@ async def async_setup_entry(
 ) -> None:
     """Adds the sensors."""
     coordinator = entry.runtime_data
-    async_add_entities(VmiPlusSensor(coordinator, description) for description in SENSORS)
+    descriptions = list(SENSORS)
+    # The air-quality (VOC) sensor is optional: add its entities only for a unit
+    # that actually has one paired, so other units are not cluttered with them.
+    if coordinator.data.sensors and coordinator.data.sensors.air_quality:
+        descriptions.extend(AIR_QUALITY_SENSORS)
+    async_add_entities(VmiPlusSensor(coordinator, description) for description in descriptions)
 
 
 class VmiPlusSensor(VmiPlusEntity, SensorEntity):
