@@ -90,12 +90,21 @@ characteristic.
 ## Frame classes
 
 App → unit: `0x10` Command ✓, `0x11` Setting, `0x12` Config, `0x13` ConfigSensors, `0x15`
-ConfigErp, `0x17` ConfigByPass, `0x19` ConfigTimeSlot ✓, `0x1a` UpdateDate ✓, `0x20` NewUpdate,
-`0x21` Update, `0x22` UpdateAckData.
+ConfigErp, `0x17` ConfigByPass, `0x19` ConfigTimeSlot ✓, `0x1a` UpdateDate ✓, `0x1c` sensor measurement period ✓, `0x20`
+NewUpdate, `0x21` Update, `0x22` UpdateAckData.
 
 Unit → app: `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓, `0x04` SimpleData,
 `0x05` TimeSlotState ✓, `0x16` ErpState, `0x18` ByPassState ✓, `0x1b` AutoTestDatas, `0x23`
-AckData, `0x30` Csv, `0x31` Histo, `0xff` Nack.
+AckData ✓ (sent after each write, including `0x1a` and `0x1c`), `0x30` Csv, `0x31` Histo, `0xff` Nack.
+
+## Sensor measurement period (`0x1c`)
+
+Sets how often a paired wireless sensor measures. Payload: the sensor id (4 bytes, **big-endian**,
+unlike SensorsState) then the period in minutes; the app offers 10, 20, 30, 40 and 50 ✓. Example for
+sensor `4190284C` set to 30 minutes: `a5 b6 1c 06 05 41 90 28 4c 1e b4`. The unit answers with an
+AckData frame (`0x23`) and has no way to report the period back: the app only remembers the last
+value it sent. Changing the period restarts the VOC sensor's measurement; the app warns that a
+reliable value takes about five periods.
 
 ## Command registers
 
@@ -149,7 +158,7 @@ included (`[0]` = `a5`).
 | `[16]` | calibration | |
 | `[17]` | surface | surface = value × 2 m² ✓ |
 | `[18]` | height / flowPerPerson | |
-| `[19]` | box | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube |
+| `[19]` | box | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube, 6 Urban 2 ✓ |
 | `[20]` | softwareVersion | major.minor in nibbles (`0x64` → 6.4) ✓ |
 | `[21]` | elec | board software version (high nibble), electronic version (low nibble) ✓ (checked against the app: `0x12` shows electronic 2, software 1) |
 | `[22:24]` LE | ventilateVolume | volume to ventilate, m³ ✓ |

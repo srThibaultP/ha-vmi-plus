@@ -38,6 +38,9 @@
           "medium": "mdi:fan-speed-2",
           "high": "mdi:fan-speed-3"
         }
+      },
+      "air_quality_period": {
+        "default": "mdi:timer-cog-outline"
       }
     },
     "sensor": {

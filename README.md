@@ -6,7 +6,7 @@
 
 Unofficial Home Assistant integration that controls **Ventilairsec VMI+ / VMCI** ventilation units
 over Bluetooth Low Energy, locally, without the vendor's cloud. It was built by reverse-engineering
-the official VMI+ Android app and checked against a real **Urban** unit.
+the official VMI+ Android app and checked against real **Urban** and **Urban 2** units.
 
 Everything the app shows or controls for a private customer is available in Home Assistant. The
 protocol, including the installer and after-sales functions that are deliberately left out, is
@@ -49,6 +49,7 @@ All entities belong to one device. Entity ids start with your device name (e.g.
 | Summer supply-air limit | Summer supply air limit | `number` |
 | Remote control temperature / humidity | Room temperature / Room humidity | `sensor` |
 | Air-quality (VOC) sensor index / temperature / humidity, only when one is paired | Air quality VOC / Air quality temperature / Air quality humidity | `sensor` |
+| VOC sensor measurement period (10–50 min; shows the last value set from Home Assistant, the unit cannot report it) | Air quality measurement period | `select` (config) |
 | Internal probe temperature / humidity | Internal probe temperature / Internal probe humidity | `sensor` |
 | Remaining filter life (days) | Filter life | `sensor` |
 | Theoretical air flow (m³/h) | Theoretical air flow | `sensor` |

@@ -16,7 +16,7 @@
   "issue_tracker": "https://github.com/srThibaultP/ha-vmi-plus/issues",
   "loggers": ["vmi_plus_ble"],
   "requirements": [
-    "vmi-plus-ble@git+https://github.com/srThibaultP/vmi-plus-ble@acdc7e972772499950fa7bb0a07124d5d5590c29"
+    "vmi-plus-ble@git+https://github.com/srThibaultP/vmi-plus-ble@d2a8c8a2dc406fd9ccda1d5a78533b715c6bd39f"
   ],
   "version": "0.9.0"
 }

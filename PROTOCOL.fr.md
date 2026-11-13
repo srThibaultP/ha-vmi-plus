@@ -90,12 +90,21 @@ sur la caractéristique de télémétrie.
 ## Classes de trames
 
 App → centrale : `0x10` Command ✓, `0x11` Setting, `0x12` Config, `0x13` ConfigSensors, `0x15`
-ConfigErp, `0x17` ConfigByPass, `0x19` ConfigTimeSlot ✓, `0x1a` UpdateDate ✓, `0x20` NewUpdate,
-`0x21` Update, `0x22` UpdateAckData.
+ConfigErp, `0x17` ConfigByPass, `0x19` ConfigTimeSlot ✓, `0x1a` UpdateDate ✓, `0x1c` période de mesure d'un capteur ✓, `0x20`
+NewUpdate, `0x21` Update, `0x22` UpdateAckData.
 
 Centrale → app : `0x01` State ✓, `0x02` SensorsState ✓, `0x03` ProbesState ✓, `0x04` SimpleData,
 `0x05` TimeSlotState ✓, `0x16` ErpState, `0x18` ByPassState ✓, `0x1b` AutoTestDatas, `0x23`
-AckData, `0x30` Csv, `0x31` Histo, `0xff` Nack.
+AckData ✓ (envoyée après chaque écriture, dont `0x1a` et `0x1c`), `0x30` Csv, `0x31` Histo, `0xff` Nack.
+
+## Période de mesure d'un capteur (`0x1c`)
+
+Règle la fréquence de mesure d'un capteur sans fil appairé. Charge utile : l'identifiant du capteur
+(4 octets, **gros-boutiste**, contrairement à SensorsState) puis la période en minutes ; l'app propose
+10, 20, 30, 40 et 50 ✓. Exemple pour le capteur `4190284C` réglé sur 30 minutes :
+`a5 b6 1c 06 05 41 90 28 4c 1e b4`. La centrale répond par une trame AckData (`0x23`) et ne peut pas
+renvoyer la période : l'app retient seulement la dernière valeur envoyée. Changer la période relance
+la mesure du capteur COV ; l'app prévient qu'une valeur fiable demande environ cinq périodes.
 
 ## Registres de commande
 
@@ -150,7 +159,7 @@ en-tête compris (`[0]` = `a5`).
 | `[16]` | calibration | |
 | `[17]` | surface | surface = valeur × 2 m² ✓ |
 | `[18]` | height / flowPerPerson | |
-| `[19]` | box | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube |
+| `[19]` | box | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube, 6 Urban 2 ✓ |
 | `[20]` | softwareVersion | majeure.mineure en quartets (`0x64` → 6.4) ✓ |
 | `[21]` | elec | version logicielle de la carte (quartet haut), version électronique (quartet bas) ✓ (vérifié avec l'app : `0x12` affiche électronique 2, logiciel 1) |
 | `[22:24]` LE | ventilateVolume | volume à ventiler, m³ ✓ |

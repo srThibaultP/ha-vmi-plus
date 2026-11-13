@@ -68,6 +68,16 @@
           "medium": "Moyenne",
           "high": "Forte"
         }
+      },
+      "air_quality_period": {
+        "name": "Période de mesure qualité de l'air",
+        "state": {
+          "10": "10 minutes",
+          "20": "20 minutes",
+          "30": "30 minutes",
+          "40": "40 minutes",
+          "50": "50 minutes"
+        }
       }
     },
     "sensor": {
