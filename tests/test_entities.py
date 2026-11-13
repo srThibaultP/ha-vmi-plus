@@ -185,14 +185,49 @@ async def test_air_quality_sensor_added_when_paired(
     mock_client.state = make_state(SENSORS_WITH_COV)
     mock_client.update = AsyncMock(return_value=mock_client.state)
     mock_entry.add_to_hass(hass)
-    with patch(
-        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default", new=True
-    ):
+    with patch("homeassistant.helpers.entity.Entity.entity_registry_enabled_default", new=True):
         assert await hass.config_entries.async_setup(mock_entry.entry_id)
         await hass.async_block_till_done()
     assert hass.states.get("sensor.urban_air_quality_voc").state == "56"
     assert hass.states.get("sensor.urban_air_quality_humidity").state == "61"
     assert hass.states.get("sensor.urban_air_quality_temperature").state == "20"
+
+
+async def test_air_quality_period(
+    hass: HomeAssistant,
+    mock_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    mock_ble_device: MagicMock,
+) -> None:
+    """The VOC sensor's period restores the last value set and sends a new one."""
+    from homeassistant.core import State
+    from pytest_homeassistant_custom_component.common import mock_restore_cache
+
+    from .conftest import SENSORS_WITH_COV, make_state
+
+    entity_id = "select.urban_air_quality_measurement_period"
+    mock_restore_cache(hass, [State(entity_id, "20")])
+    mock_client.state = make_state(SENSORS_WITH_COV)
+    mock_client.update = AsyncMock(return_value=mock_client.state)
+    mock_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(mock_entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == "20"
+
+    await hass.services.async_call(
+        "select",
+        SERVICE_SELECT_OPTION,
+        {ATTR_ENTITY_ID: entity_id, ATTR_OPTION: "30"},
+        blocking=True,
+    )
+    assert call_args(mock_client.set_sensor_period) == [("4190284C", 30)]
+    assert hass.states.get(entity_id).state == "30"
+
+
+@pytest.mark.usefixtures("setup_integration")
+async def test_no_air_quality_period_without_sensor(hass: HomeAssistant) -> None:
+    """A unit without a VOC sensor has no period select."""
+    assert hass.states.get("select.urban_air_quality_measurement_period") is None
 
 
 @pytest.mark.usefixtures("setup_integration")

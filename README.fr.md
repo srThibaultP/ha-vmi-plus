@@ -6,7 +6,7 @@
 
 Intégration Home Assistant non officielle qui pilote les centrales de ventilation **Ventilairsec
 VMI+ / VMCI** en Bluetooth Low Energy, en local, sans le cloud du fabricant. Elle a été construite
-par rétro-ingénierie de l'app Android officielle VMI+ et vérifiée sur une vraie centrale **Urban**.
+par rétro-ingénierie de l'app Android officielle VMI+ et vérifiée sur de vraies centrales **Urban** et **Urban 2**.
 
 Tout ce que l'app affiche ou pilote pour un particulier est disponible dans Home Assistant. Le
 protocole, y compris les fonctions installateur et SAV volontairement laissées de côté, est décrit
@@ -50,6 +50,7 @@ Home Assistant (anglais et français fournis).
 | Limite de soufflage été | Limite température été | `number` |
 | Température / humidité de la télécommande | Température pièce / Humidité pièce | `sensor` |
 | Indice COV / température / humidité du capteur de qualité d'air, seulement s'il est appairé | Qualité de l'air COV / Température qualité de l'air / Humidité qualité de l'air | `sensor` |
+| Période de mesure du capteur COV (10–50 min ; affiche la dernière valeur réglée depuis Home Assistant, la centrale ne la renvoie pas) | Période de mesure qualité de l'air | `select` (config) |
 | Température / humidité de la sonde interne | Température sonde interne / Humidité sonde interne | `sensor` |
 | Autonomie restante du filtre (jours) | Autonomie filtre | `sensor` |
 | Débit théorique (m³/h) | Débit théorique | `sensor` |

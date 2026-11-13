@@ -95,6 +95,7 @@ def mock_client() -> Generator[MagicMock]:
         "set_preheat_target",
         "locate",
         "declare_new_filter",
+        "set_sensor_period",
     ):
         setattr(client, method, AsyncMock())
     with (
