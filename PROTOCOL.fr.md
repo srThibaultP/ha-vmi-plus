@@ -152,7 +152,7 @@ en-tête compris (`[0]` = `a5`).
 | `[18]` | height / flowPerPerson | |
 | `[19]` | box | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube |
 | `[20]` | softwareVersion | majeure.mineure en quartets (`0x64` → 6.4) ✓ |
-| `[21]` | elec | version électronique (quartet haut), version logicielle de la carte (quartet bas) ✓ |
+| `[21]` | elec | version logicielle de la carte (quartet haut), version électronique (quartet bas) ✓ (vérifié avec l'app : `0x12` affiche électronique 2, logiciel 1) |
 | `[22:24]` LE | ventilateVolume | volume à ventiler, m³ ✓ |
 | `[24]` | preheatType | 1 électrique ✓, 2 solaire, 3 smart, 4 smart partner, 5 partner |
 | `[25]` | bypass | bypass de l'échangeur ouvert ✓ |

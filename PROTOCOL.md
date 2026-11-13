@@ -151,7 +151,7 @@ included (`[0]` = `a5`).
 | `[18]` | height / flowPerPerson | |
 | `[19]` | box | 1 Purevent, 2 Urban ✓, 3 PRO, 5 Cube |
 | `[20]` | softwareVersion | major.minor in nibbles (`0x64` → 6.4) ✓ |
-| `[21]` | elec | electronic version (high nibble), board software version (low nibble) ✓ |
+| `[21]` | elec | board software version (high nibble), electronic version (low nibble) ✓ (checked against the app: `0x12` shows electronic 2, software 1) |
 | `[22:24]` LE | ventilateVolume | volume to ventilate, m³ ✓ |
 | `[24]` | preheatType | 1 electric ✓, 2 solar, 3 smart, 4 smart partner, 5 partner |
 | `[25]` | bypass | heat-exchanger bypass open ✓ |
