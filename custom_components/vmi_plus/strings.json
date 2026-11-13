@@ -127,6 +127,15 @@
       },
       "paired_sensors": {
         "name": "Paired sensors"
+      },
+      "air_quality_voc": {
+        "name": "Air quality VOC"
+      },
+      "air_quality_temperature": {
+        "name": "Air quality temperature"
+      },
+      "air_quality_humidity": {
+        "name": "Air quality humidity"
       }
     },
     "switch": {

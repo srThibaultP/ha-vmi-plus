@@ -48,6 +48,7 @@ All entities belong to one device. Entity ids start with your device name (e.g.
 | Preheat target | Preheat target | `number` |
 | Summer supply-air limit | Summer supply air limit | `number` |
 | Remote control temperature / humidity | Room temperature / Room humidity | `sensor` |
+| Air-quality (VOC) sensor index / temperature / humidity, only when one is paired | Air quality VOC / Air quality temperature / Air quality humidity | `sensor` |
 | Internal probe temperature / humidity | Internal probe temperature / Internal probe humidity | `sensor` |
 | Remaining filter life (days) | Filter life | `sensor` |
 | Theoretical air flow (m³/h) | Theoretical air flow | `sensor` |
