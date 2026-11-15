@@ -4,6 +4,17 @@ on:
   push:
     branches: [main]
   pull_request:
+  # HACS and hassfest recommend a daily run, to catch new Home Assistant rules
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   hacs:
@@ -19,6 +30,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: home-assistant/actions/hassfest@master
 
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.16.9"
+          args: check
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.16.9"
+          args: format --check
+
   tests:
     runs-on: ubuntu-latest
     steps:
@@ -26,7 +50,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - run: pip install pytest-homeassistant-custom-component ruff
+      - run: pip install pytest-homeassistant-custom-component
       # The bluetooth component imports its own requirements (habluetooth, aiousbwatcher, ...),
       # which pytest-homeassistant-custom-component does not install.
       - run: >-
@@ -35,5 +59,4 @@ jobs:
           print(' '.join(r for c in ('bluetooth', 'bluetooth_adapters', 'usb')
           for r in json.loads((d / c / 'manifest.json').read_text()).get('requirements', [])))")
       - run: pip install "$(python -c "import json; print(json.load(open('custom_components/vmi_plus/manifest.json'))['requirements'][0])")"
-      - run: ruff check custom_components tests
       - run: pytest --cov
